@@ -77,13 +77,14 @@ const keys = {
     'Space': false
 };
 
-// Initialize minimap
-const minimapWidth = 200;
-const minimapHeight = 200;
+// Initialize minimap with responsive size
+const isMobile = window.innerWidth < 768;
+const minimapWidth = isMobile ? 120 : 200;  // Smaller on mobile
+const minimapHeight = isMobile ? 120 : 200;
 const minimapContainer = document.createElement('div');
 minimapContainer.style.position = 'absolute';
-minimapContainer.style.bottom = '20px';
-minimapContainer.style.right = '20px';
+minimapContainer.style.bottom = isMobile ? '10px' : '20px';  // Closer to edge on mobile
+minimapContainer.style.right = isMobile ? '10px' : '20px';
 minimapContainer.style.width = minimapWidth + 'px';
 minimapContainer.style.height = minimapHeight + 'px';
 minimapContainer.style.border = '2px solid white';
@@ -369,10 +370,10 @@ window.addEventListener('mousedown', (e) => {
 const joystickContainer = document.createElement('div');
 joystickContainer.style.position = 'fixed';
 joystickContainer.style.bottom = '50px';
-joystickContainer.style.left = '50%';
-joystickContainer.style.transform = 'translateX(-50%)';
-joystickContainer.style.width = '120px';
-joystickContainer.style.height = '120px';
+joystickContainer.style.left = '50px';  // Fixed left position instead of center
+joystickContainer.style.transform = 'none';  // Remove center transform
+joystickContainer.style.width = '100px';  // Slightly smaller
+joystickContainer.style.height = '100px';
 document.body.appendChild(joystickContainer);
 
 const joystick = nipplejs.create({
@@ -380,7 +381,7 @@ const joystick = nipplejs.create({
     mode: 'static',
     position: { left: '50%', bottom: '50%' },
     color: 'white',
-    size: 120
+    size: 100  // Match container size
 });
 
 joystick.on('move', (evt, data) => {
@@ -415,14 +416,14 @@ joystick.on('end', () => {
 const attackButton = document.createElement('button');
 attackButton.style.position = 'fixed';
 attackButton.style.bottom = '50px';
-attackButton.style.right = '50px';
-attackButton.style.width = '60px';
-attackButton.style.height = '60px';
+attackButton.style.right = '30px';  // Closer to edge
+attackButton.style.width = '70px';  // Slightly larger
+attackButton.style.height = '70px';
 attackButton.style.borderRadius = '50%';
 attackButton.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
 attackButton.style.border = '2px solid white';
 attackButton.style.color = 'white';
-attackButton.style.fontSize = '24px';
+attackButton.style.fontSize = '30px';  // Larger icon
 attackButton.innerHTML = '⚔️';
 attackButton.style.cursor = 'pointer';
 document.body.appendChild(attackButton);
@@ -432,11 +433,21 @@ attackButton.addEventListener('touchstart', (e) => {
     attack();
 });
 
-// Handle window resize
+// Handle window resize for responsive UI
 window.addEventListener('resize', () => {
+    const isMobile = window.innerWidth < 768;
+    
+    // Update camera
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+    
+    // Update minimap size
+    minimapContainer.style.width = (isMobile ? 120 : 200) + 'px';
+    minimapContainer.style.height = (isMobile ? 120 : 200) + 'px';
+    minimapContainer.style.bottom = isMobile ? '10px' : '20px';
+    minimapContainer.style.right = isMobile ? '10px' : '20px';
+    minimapRenderer.setSize(isMobile ? 120 : 200, isMobile ? 120 : 200);
 });
 
 // Start animation loop

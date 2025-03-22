@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { LocationManager } from './locations/LocationManager.js';
+import { Buildings } from './locations/Buildings.js';
 
 // Game state
 let scene = null;
@@ -392,6 +393,9 @@ window.addEventListener('sceneReady', (e) => {
     createGrassPatches(scene);
     createShrubs(scene);
     createClouds(scene);
+    
+    // Initialize buildings
+    new Buildings(scene, scene);
     
     locationManager = new LocationManager(scene, scene);
 });
