@@ -20,21 +20,21 @@ export class Buildings {
                 name: 'Farm',
                 path: '/assets/models/Farm.glb',
                 position: new THREE.Vector3(-150, 0, 100),  // Northeast
-                scale: 3,
+                scale: 8,  // Matched to barracks
                 markerColor: 0x90EE90  // Light green
             },
             {
                 name: 'Sawmill',
                 path: '/assets/models/Fantasy Sawmill.glb',
                 position: new THREE.Vector3(200, 0, 150),   // Southeast
-                scale: 2,
+                scale: 8,  // Matched to barracks
                 markerColor: 0x8B4513  // Saddle brown
             },
             {
                 name: 'Houses',
                 path: '/assets/models/Houses.glb',
                 position: new THREE.Vector3(-100, 0, -200), // Northwest
-                scale: 2.5,
+                scale: 8,  // Matched to barracks
                 markerColor: 0xDEB887  // Burlywood
             }
         ];

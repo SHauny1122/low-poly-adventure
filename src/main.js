@@ -5,12 +5,13 @@ import nipplejs from 'nipplejs';
 import './game.js';
 
 // Game constants
-const MOVEMENT_SPEED = 10;
-const ACCELERATION = 30;
-const DECELERATION = 40;
-const ROTATION_SPEED = 8;
-const CAMERA_HEIGHT = 3;
-const CAMERA_DISTANCE = 8;
+const MOVEMENT_SPEED = 8;  // Slightly slower for more natural movement
+const ACCELERATION = 4;  // Smoother acceleration
+const DECELERATION = 8;  // Smoother deceleration
+const ROTATION_SPEED = Math.PI * 1.0;  // Slower rotation for more natural turning
+const ROTATION_SMOOTHING = 0.15;  // Smooth out the rotation
+const CAMERA_HEIGHT = 5;  // Increased camera height slightly
+const CAMERA_DISTANCE = 12;  // Increased distance for better view
 const CHARACTER_HEIGHT = 0;
 const SPAWN_POINT = new THREE.Vector3(0, 0, 0);
 
@@ -66,7 +67,6 @@ let attackAction;
 let isAttacking = false;
 const clock = new THREE.Clock();
 const velocity = new THREE.Vector3();
-const direction = new THREE.Vector3();
 
 // Controls
 const keys = {
@@ -253,65 +253,103 @@ function animate() {
     const delta = clock.getDelta();
     
     if (character) {
-        // Get camera angle for movement direction
-        const cameraAngle = Math.atan2(
-            camera.position.x - character.position.x,
-            camera.position.z - character.position.z
-        );
+        let moveZ = 0;
+        let rotate = 0;
         
-        // Reset movement direction
-        let directionX = 0;
-        let directionZ = 0;
+        // WASD controls with smooth transitions
+        if (keys['KeyW']) moveZ += 1;
+        if (keys['KeyS']) moveZ -= 1;
+        if (keys['KeyA']) rotate += 1;
+        if (keys['KeyD']) rotate -= 1;
         
-        // Calculate movement based on keys and joystick
-        if (keys['KeyW'] || joystickState.forward) {
-            directionX += Math.sin(cameraAngle);
-            directionZ += Math.cos(cameraAngle);
-        }
-        if (keys['KeyS'] || joystickState.backward) {
-            directionX -= Math.sin(cameraAngle);
-            directionZ -= Math.cos(cameraAngle);
-        }
-        if (keys['KeyA'] || joystickState.left) {
-            directionX -= Math.cos(cameraAngle);
-            directionZ += Math.sin(cameraAngle);
-        }
-        if (keys['KeyD'] || joystickState.right) {
-            directionX += Math.cos(cameraAngle);
-            directionZ -= Math.sin(cameraAngle);
-        }
+        // Add joystick input with smooth transitions
+        if (joystickState.forward) moveZ += 1;
+        if (joystickState.backward) moveZ -= 1;
+        if (joystickState.left) rotate += 1;
+        if (joystickState.right) rotate -= 1;
         
-        // Normalize movement direction
-        const length = Math.sqrt(directionX * directionX + directionZ * directionZ);
-        if (length > 0) {
-            directionX /= length;
-            directionZ /= length;
+        // Smooth rotation with momentum
+        if (rotate !== 0) {
+            const targetRotationVelocity = rotate * ROTATION_SPEED;
+            if (!character.rotationVelocity) character.rotationVelocity = 0;
             
-            // Set character rotation to face movement direction
-            character.rotation.y = Math.atan2(directionX, directionZ);
+            // Smoothly approach target rotation velocity
+            character.rotationVelocity += (targetRotationVelocity - character.rotationVelocity) * ROTATION_SMOOTHING;
             
-            // Update velocity with acceleration
-            const moveDirection = new THREE.Vector3(directionX, 0, directionZ);
-            velocity.lerp(moveDirection.multiplyScalar(MOVEMENT_SPEED), ACCELERATION * delta);
+            // Apply rotation with smooth deceleration
+            character.rotation.y += character.rotationVelocity * delta;
+        } else if (character.rotationVelocity) {
+            // Gradually slow down rotation when no input
+            character.rotationVelocity *= 0.85;
+            character.rotation.y += character.rotationVelocity * delta;
+            
+            // Stop tiny rotations
+            if (Math.abs(character.rotationVelocity) < 0.01) {
+                character.rotationVelocity = 0;
+            }
+        }
+        
+        // Handle forward/backward movement with smooth transitions
+        if (moveZ !== 0) {
+            // Calculate movement direction based on character's rotation
+            const moveDirection = new THREE.Vector3(
+                Math.sin(character.rotation.y) * moveZ,
+                0,
+                Math.cos(character.rotation.y) * moveZ
+            );
+            
+            // Smoothly transition to target velocity
+            const targetVelocity = moveDirection.multiplyScalar(MOVEMENT_SPEED);
+            velocity.lerp(targetVelocity, ACCELERATION * delta);
+            
+            // Add slight rotation based on movement for more natural feel
+            if (velocity.length() > 0.1) {
+                const currentSpeed = velocity.length() / MOVEMENT_SPEED;
+                if (rotate !== 0) {
+                    // Add a slight tilt when turning while moving
+                    character.rotation.z = THREE.MathUtils.lerp(
+                        character.rotation.z,
+                        -rotate * 0.1 * currentSpeed,
+                        0.1
+                    );
+                } else {
+                    // Return to upright
+                    character.rotation.z = THREE.MathUtils.lerp(
+                        character.rotation.z,
+                        0,
+                        0.1
+                    );
+                }
+            }
         } else {
-            // Decelerate when no input
+            // Smooth deceleration
             velocity.lerp(new THREE.Vector3(0, 0, 0), DECELERATION * delta);
+            
+            // Return to upright when not moving
+            if (character.rotation.z !== 0) {
+                character.rotation.z = THREE.MathUtils.lerp(
+                    character.rotation.z,
+                    0,
+                    0.1
+                );
+            }
         }
         
         // Update character position
         character.position.addScaledVector(velocity, delta);
         
-        // Update camera position to follow behind character
+        // Smooth camera follow
         const idealOffset = new THREE.Vector3(
-            character.position.x - Math.sin(character.rotation.y) * CAMERA_DISTANCE,
-            character.position.y + CAMERA_HEIGHT,
-            character.position.z - Math.cos(character.rotation.y) * CAMERA_DISTANCE
+            -Math.sin(character.rotation.y) * CAMERA_DISTANCE,
+            CAMERA_HEIGHT,
+            -Math.cos(character.rotation.y) * CAMERA_DISTANCE
         );
         
-        camera.position.lerp(idealOffset, 0.1);
+        // Smoother camera movement
+        camera.position.lerp(character.position.clone().add(idealOffset), 0.1);
         camera.lookAt(
             character.position.x,
-            character.position.y + 1,
+            character.position.y + 2,
             character.position.z
         );
         
@@ -362,7 +400,6 @@ const joystick = nipplejs.create({
 
 joystick.on('move', (evt, data) => {
     const angle = data.angle.radian;
-    const force = Math.min(data.force, 1);
     
     // Reset joystick state
     joystickState.forward = false;
