@@ -27,7 +27,7 @@ export class Barracks {
 
     loadModel() {
         const loader = new GLTFLoader();
-        loader.load('src/assets/buildings/Barracks.glb', (gltf) => {
+        loader.load('/assets/buildings/Barracks.glb', (gltf) => {
             this.model = gltf.scene;
             this.model.position.copy(this.position);
             this.model.scale.set(8, 8, 8);
