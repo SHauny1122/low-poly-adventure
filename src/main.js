@@ -77,40 +77,96 @@ const keys = {
     'Space': false
 };
 
-// Initialize minimap with responsive size
-const isMobile = window.innerWidth < 768;
-const minimapWidth = isMobile ? 120 : 200;  // Smaller on mobile
-const minimapHeight = isMobile ? 120 : 200;
-const minimapContainer = document.createElement('div');
-minimapContainer.style.position = 'absolute';
-minimapContainer.style.bottom = isMobile ? '10px' : '20px';  // Closer to edge on mobile
-minimapContainer.style.right = isMobile ? '10px' : '20px';
-minimapContainer.style.width = minimapWidth + 'px';
-minimapContainer.style.height = minimapHeight + 'px';
-minimapContainer.style.border = '2px solid white';
-minimapContainer.style.borderRadius = '5px';
-minimapContainer.style.overflow = 'hidden';
-minimapContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-document.body.appendChild(minimapContainer);
+// Minimap setup
+const minimapCanvas = document.getElementById('minimap');
+const minimapCamera = new THREE.OrthographicCamera(
+    -100, 100,  // Left, Right
+    100, -100,  // Top, Bottom
+    1, 1000     // Near, Far
+);
+minimapCamera.position.set(0, 300, 0); // Higher up for better overview
+minimapCamera.zoom = 0.8; // Zoom out slightly to show more area
+minimapCamera.updateProjectionMatrix();
+minimapCamera.position.set(0, 200, 0);
+minimapCamera.lookAt(0, 0, 0);
+minimapCamera.layers.enable(1);
 
-const minimapCamera = new THREE.OrthographicCamera(-50, 50, 50, -50, 1, 1000);
-minimapCamera.position.set(0, 100, 0);
-minimapCamera.lookAt(new THREE.Vector3(0, 0, 0));
-minimapCamera.layers.set(1);
+// Single minimap renderer
+const minimapRenderer = new THREE.WebGLRenderer({
+    canvas: minimapCanvas,
+    antialias: true,
+    alpha: true
+});
+minimapRenderer.setPixelRatio(window.devicePixelRatio);
+minimapRenderer.setClearColor(0x2E7D32, 1); // Set background to grass green
 
-const minimapRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-minimapRenderer.setSize(minimapWidth, minimapHeight);
-minimapRenderer.setClearColor(0x000000, 0.3);
-minimapContainer.appendChild(minimapRenderer.domElement);
+// Create minimap scene
+const minimapScene = new THREE.Scene();
+minimapScene.background = new THREE.Color(0x2E7D32); // Match background color
 
-// Create player marker for minimap
-const markerGeometry = new THREE.ConeGeometry(1.5, 3, 3);
-const markerMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+// Create player marker for minimap (larger blue triangle)
+const markerGeometry = new THREE.ConeGeometry(4, 8, 3);
+const markerMaterial = new THREE.MeshBasicMaterial({ color: 0x4169E1 }); // Royal blue
 const playerMarker = new THREE.Mesh(markerGeometry, markerMaterial);
-playerMarker.rotation.x = -Math.PI / 2;
-playerMarker.rotation.z = Math.PI;
+playerMarker.rotation.x = Math.PI / 2;
+playerMarker.position.y = 2;
 playerMarker.layers.set(1);
-scene.add(playerMarker);
+minimapScene.add(playerMarker);
+
+// Create building markers for minimap
+function createBuildingMarker(position, color, scale = 1) {
+    const markerGeometry = new THREE.BoxGeometry(8 * scale, 8 * scale, 8 * scale);
+    const markerMaterial = new THREE.MeshBasicMaterial({ color: color });
+    const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+    marker.position.copy(position);
+    marker.position.y = 1;
+    marker.layers.set(1);
+    minimapScene.add(marker);
+    return marker;
+}
+
+// Add building markers
+const buildingMarkers = [
+    // Barracks (brown)
+    createBuildingMarker(new THREE.Vector3(50, 0, -100), 0x8B4513, 1.5),
+    // Farm (light green)
+    createBuildingMarker(new THREE.Vector3(-150, 0, 100), 0x90EE90, 1.2),
+    // Sawmill (darker brown)
+    createBuildingMarker(new THREE.Vector3(200, 0, 150), 0x654321, 1.2),
+    // Houses (tan)
+    createBuildingMarker(new THREE.Vector3(-100, 0, -200), 0xDEB887, 1.2)
+];
+
+// Add chest marker (gold color)
+const chestMarker = createBuildingMarker(new THREE.Vector3(60, 0, -105), 0xFFD700, 0.5);
+
+// Function to update minimap size
+function updateMinimapSize() {
+    const container = document.getElementById('minimapContainer');
+    const rect = container.getBoundingClientRect();
+    minimapRenderer.setSize(rect.width, rect.height, false);
+}
+
+// Initial size and resize handling
+updateMinimapSize();
+window.addEventListener('resize', updateMinimapSize);
+
+// Update minimap in render loop
+function updateMinimap() {
+    if (character) {
+        // Update player marker position
+        playerMarker.position.x = character.position.x;
+        playerMarker.position.z = character.position.z;
+        playerMarker.rotation.y = -character.rotation.y + Math.PI/2;
+        
+        // Update camera to follow player
+        minimapCamera.position.x = character.position.x;
+        minimapCamera.position.z = character.position.z;
+        
+        // Render minimap with all markers
+        minimapRenderer.render(minimapScene, minimapCamera);
+    }
+}
 
 // Load character model
 const loader = new GLTFLoader();
@@ -369,7 +425,7 @@ function animate() {
     }
     
     renderer.render(scene, camera);
-    minimapRenderer.render(scene, minimapCamera);
+    minimapRenderer.render(minimapScene, minimapCamera);
 }
 
 // Joystick state
@@ -477,22 +533,13 @@ window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
     
     // Update minimap size
+    const minimapContainer = document.getElementById('minimapContainer');
     minimapContainer.style.width = (isMobile ? 120 : 200) + 'px';
     minimapContainer.style.height = (isMobile ? 120 : 200) + 'px';
     minimapContainer.style.bottom = isMobile ? '10px' : '20px';
     minimapContainer.style.right = isMobile ? '10px' : '20px';
-    minimapRenderer.setSize(isMobile ? 120 : 200, isMobile ? 120 : 200);
+    updateMinimapSize();
 });
 
 // Start animation loop
 animate();
-
-// Update minimap
-function updateMinimap() {
-    playerMarker.position.copy(character.position);
-    playerMarker.position.y = 2;
-    playerMarker.rotation.z = character.rotation.y + Math.PI;
-    minimapCamera.position.x = character.position.x;
-    minimapCamera.position.z = character.position.z;
-    minimapRenderer.render(scene, minimapCamera);
-}

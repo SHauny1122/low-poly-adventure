@@ -66,11 +66,16 @@ export class Buildings {
                 model.position.copy(config.position);
                 model.scale.set(config.scale, config.scale, config.scale);
                 
-                // Enable shadows
+                // Enable shadows with distance optimization
                 model.traverse((child) => {
                     if (child.isMesh) {
                         child.castShadow = true;
                         child.receiveShadow = true;
+                        
+                        // Enable fog for distance fade-out
+                        if (child.material) {
+                            child.material.fog = true;
+                        }
                     }
                 });
                 
