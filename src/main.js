@@ -141,6 +141,7 @@ loader.load('/assets/models/Character Animated (2).glb', function(gltf) {
     idleAction.setEffectiveWeight(1);
     
     // Configure attack animation
+    attackAction.setEffectiveTimeScale(4.0);  // Super fast attack
     attackAction.setLoop(THREE.LoopOnce);
     attackAction.clampWhenFinished = true;
     
@@ -149,13 +150,13 @@ loader.load('/assets/models/Character Animated (2).glb', function(gltf) {
             isAttacking = false;
             attackAction.stop();
             
-            // Return to previous animation with smooth transition
+            // Instant transition back
             if (velocity.lengthSq() > 0.1) {
-                walkAction.fadeIn(0.2);
-                idleAction.fadeOut(0.2);
+                walkAction.setEffectiveWeight(1);  // Instant transition
+                idleAction.setEffectiveWeight(0);
             } else {
-                walkAction.fadeOut(0.2);
-                idleAction.fadeIn(0.2);
+                walkAction.setEffectiveWeight(0);
+                idleAction.setEffectiveWeight(1);
             }
         }
     });
@@ -239,9 +240,9 @@ function attack() {
         attackAction.setEffectiveWeight(1);
         attackAction.play();
         
-        // Blend with current animation
+        // No blending during attack
         if (velocity.lengthSq() > 0.1) {
-            walkAction.setEffectiveWeight(0.3);
+            walkAction.setEffectiveWeight(0);  // No walk animation during attack
         }
     }
 }
@@ -249,124 +250,99 @@ function attack() {
 // Animation loop
 function animate() {
     requestAnimationFrame(animate);
-    
     const delta = clock.getDelta();
-    
-    if (mixer) {
-        mixer.update(delta);
-    }
     
     if (character) {
         // Get camera angle for movement direction
-        const cameraAngle = Math.PI + Math.atan2(
+        const cameraAngle = Math.atan2(
             camera.position.x - character.position.x,
             camera.position.z - character.position.z
         );
-
-        // Calculate movement direction relative to camera
+        
+        // Reset movement direction
         let directionX = 0;
         let directionZ = 0;
-
-        // Movement controls exactly as per working memory
-        if (keys['KeyW']) { // Forward
+        
+        // Calculate movement based on keys and joystick
+        if (keys['KeyW'] || joystickState.forward) {
             directionX += Math.sin(cameraAngle);
             directionZ += Math.cos(cameraAngle);
         }
-        if (keys['KeyS']) { // Backward
+        if (keys['KeyS'] || joystickState.backward) {
             directionX -= Math.sin(cameraAngle);
             directionZ -= Math.cos(cameraAngle);
         }
-        if (keys['KeyA']) { // Left
-            directionX += Math.cos(cameraAngle);
-            directionZ -= Math.sin(cameraAngle);
-        }
-        if (keys['KeyD']) { // Right
+        if (keys['KeyA'] || joystickState.left) {
             directionX -= Math.cos(cameraAngle);
             directionZ += Math.sin(cameraAngle);
         }
-
+        if (keys['KeyD'] || joystickState.right) {
+            directionX += Math.cos(cameraAngle);
+            directionZ -= Math.sin(cameraAngle);
+        }
+        
         // Normalize movement direction
         const length = Math.sqrt(directionX * directionX + directionZ * directionZ);
         if (length > 0) {
             directionX /= length;
             directionZ /= length;
-        }
-
-        if (length > 0.1) {
-            const moveDirection = new THREE.Vector3(directionX, 0, directionZ);
-            velocity.lerp(moveDirection.multiplyScalar(MOVEMENT_SPEED), ACCELERATION * delta);
-            character.position.addScaledVector(velocity, delta);
             
-            // Character always faces movement direction
+            // Set character rotation to face movement direction
             character.rotation.y = Math.atan2(directionX, directionZ);
             
-            // Transition to walking animation
-            if (!isAttacking) {
-                walkAction.setEffectiveWeight(1);
-                idleAction.setEffectiveWeight(0);
-            }
-            
-            // Update camera to follow behind character at fixed angle
-            const idealOffset = new THREE.Vector3(
-                character.position.x - Math.sin(character.rotation.y) * CAMERA_DISTANCE,
-                character.position.y + CAMERA_HEIGHT,
-                character.position.z - Math.cos(character.rotation.y) * CAMERA_DISTANCE
-            );
-            
-            camera.position.lerp(idealOffset, 0.1);
-            camera.lookAt(character.position);
+            // Update velocity with acceleration
+            const moveDirection = new THREE.Vector3(directionX, 0, directionZ);
+            velocity.lerp(moveDirection.multiplyScalar(MOVEMENT_SPEED), ACCELERATION * delta);
         } else {
+            // Decelerate when no input
             velocity.lerp(new THREE.Vector3(0, 0, 0), DECELERATION * delta);
+        }
+        
+        // Update character position
+        character.position.addScaledVector(velocity, delta);
+        
+        // Update camera position to follow behind character
+        const idealOffset = new THREE.Vector3(
+            character.position.x - Math.sin(character.rotation.y) * CAMERA_DISTANCE,
+            character.position.y + CAMERA_HEIGHT,
+            character.position.z - Math.cos(character.rotation.y) * CAMERA_DISTANCE
+        );
+        
+        camera.position.lerp(idealOffset, 0.1);
+        camera.lookAt(
+            character.position.x,
+            character.position.y + 1,
+            character.position.z
+        );
+        
+        // Update animations
+        if (mixer) {
+            mixer.update(delta);
             
-            // Transition to idle animation
             if (!isAttacking) {
-                walkAction.setEffectiveWeight(0);
-                idleAction.setEffectiveWeight(1);
+                const speed = velocity.length() / MOVEMENT_SPEED;
+                walkAction.setEffectiveWeight(speed);
+                idleAction.setEffectiveWeight(1 - speed);
             }
         }
         
         // Update minimap
-        playerMarker.position.copy(character.position);
-        playerMarker.position.y = 2;
-        playerMarker.rotation.z = character.rotation.y + Math.PI;
-        minimapCamera.position.x = character.position.x;
-        minimapCamera.position.z = character.position.z;
-        minimapRenderer.render(scene, minimapCamera);
+        updateMinimap();
     }
     
-    // Render both main view and minimap
     renderer.render(scene, camera);
-    
-    // Dispatch animation update event
-    window.dispatchEvent(new CustomEvent('beforeRender', {
-        detail: {
-            delta: delta,
-            playerPosition: character ? character.position : new THREE.Vector3()
-        }
-    }));
+    minimapRenderer.render(scene, minimapCamera);
 }
 
-// Event listeners
-window.addEventListener('keydown', (e) => {
-    if (keys.hasOwnProperty(e.code)) {
-        keys[e.code] = true;
-    }
-});
+// Joystick state
+const joystickState = {
+    forward: false,
+    backward: false,
+    left: false,
+    right: false
+};
 
-window.addEventListener('keyup', (e) => {
-    if (keys.hasOwnProperty(e.code)) {
-        keys[e.code] = false;
-    }
-});
-
-// Only left mouse button for attack
-window.addEventListener('mousedown', (e) => {
-    if (e.button === 0) {
-        attack();
-    }
-});
-
-// Mobile controls
+// Joystick controls
 const joystickContainer = document.createElement('div');
 joystickContainer.style.position = 'fixed';
 joystickContainer.style.bottom = '50px';
@@ -388,28 +364,29 @@ joystick.on('move', (evt, data) => {
     const angle = data.angle.radian;
     const force = Math.min(data.force, 1);
     
-    keys['KeyW'] = false;
-    keys['KeyS'] = false;
-    keys['KeyA'] = false;
-    keys['KeyD'] = false;
+    // Reset joystick state
+    joystickState.forward = false;
+    joystickState.backward = false;
+    joystickState.left = false;
+    joystickState.right = false;
     
-    if (force > 0.1) {
-        // Forward is up (-PI/4 to -3PI/4)
-        // Back is down (PI/4 to 3PI/4)
-        // Left is left (3PI/4 to -3PI/4)
-        // Right is right (-PI/4 to PI/4)
-        if (angle > -Math.PI/4 && angle < Math.PI/4) keys['KeyD'] = true;         // Right
-        if (angle > Math.PI/4 && angle < 3*Math.PI/4) keys['KeyS'] = true;        // Back
-        if (angle > 3*Math.PI/4 || angle < -3*Math.PI/4) keys['KeyA'] = true;     // Left
-        if (angle > -3*Math.PI/4 && angle < -Math.PI/4) keys['KeyW'] = true;      // Forward
+    // Convert angle to cardinal directions
+    if (angle >= -Math.PI/4 && angle < Math.PI/4) {
+        joystickState.right = true;
+    } else if (angle >= Math.PI/4 && angle < 3*Math.PI/4) {
+        joystickState.backward = true;
+    } else if (angle >= 3*Math.PI/4 || angle < -3*Math.PI/4) {
+        joystickState.left = true;
+    } else {
+        joystickState.forward = true;
     }
 });
 
 joystick.on('end', () => {
-    keys['KeyW'] = false;
-    keys['KeyS'] = false;
-    keys['KeyA'] = false;
-    keys['KeyD'] = false;
+    joystickState.forward = false;
+    joystickState.backward = false;
+    joystickState.left = false;
+    joystickState.right = false;
 });
 
 // Add attack button for mobile
@@ -433,6 +410,26 @@ attackButton.addEventListener('touchstart', (e) => {
     attack();
 });
 
+// Event listeners
+window.addEventListener('keydown', (e) => {
+    if (keys.hasOwnProperty(e.code)) {
+        keys[e.code] = true;
+    }
+});
+
+window.addEventListener('keyup', (e) => {
+    if (keys.hasOwnProperty(e.code)) {
+        keys[e.code] = false;
+    }
+});
+
+// Only left mouse button for attack
+window.addEventListener('mousedown', (e) => {
+    if (e.button === 0) {
+        attack();
+    }
+});
+
 // Handle window resize for responsive UI
 window.addEventListener('resize', () => {
     const isMobile = window.innerWidth < 768;
@@ -452,3 +449,13 @@ window.addEventListener('resize', () => {
 
 // Start animation loop
 animate();
+
+// Update minimap
+function updateMinimap() {
+    playerMarker.position.copy(character.position);
+    playerMarker.position.y = 2;
+    playerMarker.rotation.z = character.rotation.y + Math.PI;
+    minimapCamera.position.x = character.position.x;
+    minimapCamera.position.z = character.position.z;
+    minimapRenderer.render(scene, minimapCamera);
+}

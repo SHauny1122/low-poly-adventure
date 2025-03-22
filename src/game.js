@@ -192,34 +192,63 @@ function createGrassPatches(scene) {
     const loader = new GLTFLoader();
     
     loader.load('/assets/models/Grass Patch (1).glb', (gltf) => {
-        // Increased to 725 grass patches (45% more)
-        for (let i = 0; i < 725; i++) {
+        // Massive increase to 5000 grass patches for very dense coverage
+        for (let i = 0; i < 5000; i++) {
             const grassPatch = gltf.scene.clone();
             
-            // Using full map area for better coverage
-            grassPatch.position.x = Math.random() * 800 - 400;
-            grassPatch.position.z = Math.random() * 800 - 400;
-            grassPatch.position.y = 0;
+            // Concentrate grass more in the visible area
+            const radius = Math.random() * 350;  // Reduced from 400 to concentrate more
+            const angle = Math.random() * Math.PI * 2;
+            grassPatch.position.x = Math.cos(angle) * radius;
+            grassPatch.position.z = Math.sin(angle) * radius;
             
-            // Random rotation
-            grassPatch.rotation.y = Math.random() * Math.PI * 2;
-            
-            // Keep the current scale as it looks good
-            const scale = 1.5 + Math.random() * 0.5;
+            // Make patches slightly larger for more visibility
+            const scale = 1.2 + Math.random() * 0.8;  // Scale range 1.2 to 2.0
             grassPatch.scale.set(scale, scale, scale);
             
-            // Enable shadows
-            grassPatch.traverse((child) => {
-                if (child.isMesh) {
-                    child.castShadow = true;
-                    child.receiveShadow = true;
-                }
-            });
+            // Randomize rotation for natural look
+            grassPatch.rotation.y = Math.random() * Math.PI * 2;
             
-            scene.add(grassPatch);
+            // Group grass patches more densely
+            if (Math.random() < 0.3) {  // 30% chance to create a cluster
+                for (let j = 0; j < 3; j++) {  // Create 3 additional patches nearby
+                    const clusterPatch = gltf.scene.clone();
+                    const clusterRadius = 2 + Math.random() * 3;  // 2-5 units away
+                    const clusterAngle = Math.random() * Math.PI * 2;
+                    
+                    clusterPatch.position.x = grassPatch.position.x + Math.cos(clusterAngle) * clusterRadius;
+                    clusterPatch.position.z = grassPatch.position.z + Math.sin(clusterAngle) * clusterRadius;
+                    clusterPatch.rotation.y = Math.random() * Math.PI * 2;
+                    
+                    const clusterScale = scale * (0.8 + Math.random() * 0.4);  // Slightly varied scale
+                    clusterPatch.scale.set(clusterScale, clusterScale, clusterScale);
+                    
+                    clusterPatch.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                        }
+                    });
+                    scene.add(clusterPatch);
+                }
+            }
+            
+            // Avoid spawning too close to spawn point
+            const distanceFromSpawn = Math.sqrt(
+                grassPatch.position.x * grassPatch.position.x + 
+                grassPatch.position.z * grassPatch.position.z
+            );
+            
+            if (distanceFromSpawn > 15) {
+                grassPatch.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+                });
+                scene.add(grassPatch);
+            }
         }
-    }, undefined, (error) => {
-        console.error('Error loading grass patch:', error);
     });
 }
 
