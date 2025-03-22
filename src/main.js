@@ -390,10 +390,14 @@ joystick.on('move', (evt, data) => {
     keys['KeyD'] = false;
     
     if (force > 0.1) {
-        if (angle > -Math.PI/4 && angle < Math.PI/4) keys['KeyD'] = true;
-        if (angle > Math.PI/4 && angle < 3*Math.PI/4) keys['KeyS'] = true;
-        if (angle > 3*Math.PI/4 || angle < -3*Math.PI/4) keys['KeyA'] = true;
-        if (angle > -3*Math.PI/4 && angle < -Math.PI/4) keys['KeyW'] = true;
+        // Forward is up (-PI/4 to -3PI/4)
+        // Back is down (PI/4 to 3PI/4)
+        // Left is left (3PI/4 to -3PI/4)
+        // Right is right (-PI/4 to PI/4)
+        if (angle > -Math.PI/4 && angle < Math.PI/4) keys['KeyD'] = true;         // Right
+        if (angle > Math.PI/4 && angle < 3*Math.PI/4) keys['KeyS'] = true;        // Back
+        if (angle > 3*Math.PI/4 || angle < -3*Math.PI/4) keys['KeyA'] = true;     // Left
+        if (angle > -3*Math.PI/4 && angle < -Math.PI/4) keys['KeyW'] = true;      // Forward
     }
 });
 
@@ -402,6 +406,27 @@ joystick.on('end', () => {
     keys['KeyS'] = false;
     keys['KeyA'] = false;
     keys['KeyD'] = false;
+});
+
+// Add attack button for mobile
+const attackButton = document.createElement('button');
+attackButton.style.position = 'fixed';
+attackButton.style.bottom = '50px';
+attackButton.style.right = '50px';
+attackButton.style.width = '60px';
+attackButton.style.height = '60px';
+attackButton.style.borderRadius = '50%';
+attackButton.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+attackButton.style.border = '2px solid white';
+attackButton.style.color = 'white';
+attackButton.style.fontSize = '24px';
+attackButton.innerHTML = '⚔️';
+attackButton.style.cursor = 'pointer';
+document.body.appendChild(attackButton);
+
+attackButton.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    attack();
 });
 
 // Handle window resize
