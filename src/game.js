@@ -28,7 +28,7 @@ function createTerrain() {
 // Initialize trees
 function createTrees(scene, count = 200) { 
     const loader = new GLTFLoader();
-    loader.load('src/assets/models/Pine Tree.glb', (gltf) => {
+    loader.load('/assets/models/Pine Tree.glb', (gltf) => {
         const treeModel = gltf.scene;
         
         for (let i = 0; i < count; i++) {
@@ -60,7 +60,7 @@ function createTrees(scene, count = 200) {
 // Initialize enemies
 function createEnemies(scene, count = 10) {
     const loader = new GLTFLoader();
-    loader.load('src/assets/models/Skeleton.glb', (gltf) => {
+    loader.load('/assets/models/Skeleton.glb', (gltf) => {
         const enemyModel = gltf.scene;
         const enemyAnimations = gltf.animations;
         
@@ -113,7 +113,7 @@ function createEnemies(scene, count = 10) {
 // Initialize rocks
 function createRocks(scene, count = 40) {
     const loader = new GLTFLoader();
-    loader.load('src/assets/models/Rock.glb', (gltf) => {
+    loader.load('/assets/models/Rock.glb', (gltf) => {
         const rockModel = gltf.scene;
         
         for (let i = 0; i < count; i++) {
@@ -145,7 +145,7 @@ function createRocks(scene, count = 40) {
 // Initialize chest and gems
 function createChestAndGems(scene) {
     const loader = new GLTFLoader();
-    loader.load('src/assets/models/Chest.glb', (gltf) => {
+    loader.load('/assets/models/Chest.glb', (gltf) => {
         const chest = gltf.scene;
         chest.position.set(60, 0, -105); // Moved further away from barracks
         chest.scale.set(2, 2, 2);
@@ -190,7 +190,7 @@ function createChestAndGems(scene) {
 function createGrassPatches(scene) {
     const loader = new GLTFLoader();
     
-    loader.load('src/assets/models/Grass Patch (1).glb', (gltf) => {
+    loader.load('/assets/models/Grass Patch (1).glb', (gltf) => {
         // Increased to 725 grass patches (45% more)
         for (let i = 0; i < 725; i++) {
             const grassPatch = gltf.scene.clone();
@@ -225,7 +225,7 @@ function createGrassPatches(scene) {
 function createShrubs(scene) {
     const loader = new GLTFLoader();
     
-    loader.load('src/assets/models/Shrub.glb', (gltf) => {
+    loader.load('/assets/models/Shrub.glb', (gltf) => {
         // Create 50 shrubs
         for (let i = 0; i < 50; i++) {
             const shrub = gltf.scene.clone();
@@ -260,7 +260,7 @@ function createShrubs(scene) {
 function createClouds(scene) {
     const loader = new GLTFLoader();
     
-    loader.load('src/assets/models/Clouds.glb', (gltf) => {
+    loader.load('/assets/models/Clouds.glb', (gltf) => {
         // Create 35 clouds
         for (let i = 0; i < 35; i++) {
             const cloud = gltf.scene.clone();

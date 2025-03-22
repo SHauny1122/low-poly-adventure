@@ -113,7 +113,7 @@ scene.add(playerMarker);
 
 // Load character model
 const loader = new GLTFLoader();
-loader.load('src/assets/models/Character Animated (2).glb', function(gltf) {
+loader.load('/assets/models/Character Animated (2).glb', function(gltf) {
     character = gltf.scene;
     character.scale.set(1, 1, 1);
     character.position.copy(SPAWN_POINT);
@@ -214,17 +214,20 @@ function createDagger() {
     daggerGroup.add(guard);
     mainHolder.add(daggerGroup);
     
-    if (handBone) {
-        const posHolder = new THREE.Group();
-        handBone.add(posHolder);
-        posHolder.position.set(0.001, 0.0005, -0.0002);
-        posHolder.rotation.set(
-            -0.01 * Math.PI,
-            0.45 * Math.PI,
-            0.02 * Math.PI
-        );
-        posHolder.add(mainHolder);
-    }
+    const loader = new GLTFLoader();
+    loader.load('/assets/models/Dagger.glb', function(gltf) {
+        if (handBone) {
+            const posHolder = new THREE.Group();
+            handBone.add(posHolder);
+            posHolder.position.set(0.001, 0.0005, -0.0002);
+            posHolder.rotation.set(
+                -0.01 * Math.PI,
+                0.45 * Math.PI,
+                0.02 * Math.PI
+            );
+            posHolder.add(mainHolder);
+        }
+    });
 }
 
 // Attack function
