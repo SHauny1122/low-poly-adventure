@@ -6,6 +6,7 @@ import './game.js';
 
 // Game constants
 const MOVEMENT_SPEED = 8;  // Slightly slower for more natural movement
+const SPRINT_SPEED = 16;   // Double speed when sprinting
 const ACCELERATION = 4;  // Smoother acceleration
 const DECELERATION = 8;  // Smoother deceleration
 const ROTATION_SPEED = Math.PI * 1.0;  // Slower rotation for more natural turning
@@ -35,7 +36,7 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87CEEB); // Sky blue color
 
 // Add subtle fog
-scene.fog = new THREE.FogExp2(0x87CEEB, 0.006); // Increased density by 20%
+scene.fog = new THREE.FogExp2(0x87CEEB, 0.008); // Increased density for more atmosphere
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
 
@@ -74,7 +75,9 @@ let mixer;
 let walkAction;
 let idleAction;
 let attackAction;
+let runAction;
 let isAttacking = false;
+let isSprinting = false;
 const clock = new THREE.Clock();
 const velocity = new THREE.Vector3();
 
@@ -84,7 +87,8 @@ const keys = {
     'KeyS': false,
     'KeyA': false,
     'KeyD': false,
-    'Space': false
+    'Space': false,
+    'ShiftLeft': false  // Track shift key for sprint
 };
 
 // Store obstacles for collision detection
@@ -113,7 +117,7 @@ function placeFlatRocks() {
             // Add collision data
             obstacles.push({
                 position: rock.position.clone(),
-                radius: 4 * scale // Increased collision radius for better coverage
+                radius: 2 * scale // Reduced collision radius for flat rocks
             });
             
             scene.add(rock);
@@ -289,6 +293,17 @@ loader.load('/assets/models/Character Animated (2).glb', function(gltf) {
     walkAction = mixer.clipAction(animations.find(a => a.name.toLowerCase().includes('walk')));
     idleAction = mixer.clipAction(animations.find(a => a.name.toLowerCase().includes('idle')));
     attackAction = mixer.clipAction(animations.find(a => a.name.toLowerCase().includes('attack')));
+    
+    // Load run animation from separate file
+    new GLTFLoader().load('src/assets/models/Character Animated (4).glb', function(runGltf) {
+        const runAnim = runGltf.animations.find(a => a.name.toLowerCase().includes('run'));
+        if (runAnim) {
+            runAction = mixer.clipAction(runAnim);
+            runAction.setEffectiveTimeScale(1);
+            runAction.play();
+            runAction.setEffectiveWeight(0); // Start with weight 0
+        }
+    });
     
     // Configure animations
     walkAction.setEffectiveTimeScale(1.2);
@@ -518,20 +533,55 @@ attackButton.addEventListener('touchstart', (e) => {
     attack();
 });
 
+// Add sprint button for mobile
+const sprintButton = document.createElement('button');
+sprintButton.style.position = 'fixed';
+sprintButton.style.bottom = '120px';  // Above attack button
+sprintButton.style.right = '20px';
+sprintButton.style.width = '60px';
+sprintButton.style.height = '60px';
+sprintButton.style.borderRadius = '50%';
+sprintButton.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
+sprintButton.style.border = '2px solid white';
+sprintButton.style.color = 'white';
+sprintButton.style.fontSize = '12px';
+sprintButton.textContent = 'Sprint';
+sprintButton.style.display = 'none';  // Hide by default
+
+// Only show sprint button on mobile
+if (/Android|iPhone/i.test(navigator.userAgent)) {
+    sprintButton.style.display = 'block';
+}
+
+sprintButton.addEventListener('touchstart', () => {
+    isSprinting = true;
+});
+
+sprintButton.addEventListener('touchend', () => {
+    isSprinting = false;
+});
+
+document.body.appendChild(sprintButton);
+
 // Event listeners
 window.addEventListener('keydown', (e) => {
-    if (keys.hasOwnProperty(e.code)) {
+    if (e.code in keys) {
         keys[e.code] = true;
+        if (e.code === 'ShiftLeft') {
+            isSprinting = true;
+        }
     }
 });
 
 window.addEventListener('keyup', (e) => {
-    if (keys.hasOwnProperty(e.code)) {
+    if (e.code in keys) {
         keys[e.code] = false;
+        if (e.code === 'ShiftLeft') {
+            isSprinting = false;
+        }
     }
 });
 
-// Only left mouse button for attack
 window.addEventListener('mousedown', (e) => {
     if (e.button === 0) {
         attack();
@@ -588,7 +638,7 @@ function animate() {
         );
         
         // Apply movement
-        const targetVelocity = moveDirection.multiplyScalar(MOVEMENT_SPEED);
+        const targetVelocity = moveDirection.multiplyScalar(isSprinting ? SPRINT_SPEED : MOVEMENT_SPEED);
         velocity.lerp(targetVelocity, ACCELERATION * delta);
         
         // Calculate next position
@@ -609,8 +659,14 @@ function animate() {
         if (mixer) {
             mixer.update(delta);
             if (!isAttacking) {
-                const speed = velocity.length() / MOVEMENT_SPEED;
-                walkAction.setEffectiveWeight(speed);
+                const speed = velocity.length() / (isSprinting ? SPRINT_SPEED : MOVEMENT_SPEED);
+                if (isSprinting) {
+                    runAction.setEffectiveWeight(speed);
+                    walkAction.setEffectiveWeight(0);
+                } else {
+                    walkAction.setEffectiveWeight(speed);
+                    runAction.setEffectiveWeight(0);
+                }
                 idleAction.setEffectiveWeight(1 - speed);
             }
         }
