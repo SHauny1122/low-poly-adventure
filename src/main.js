@@ -214,6 +214,61 @@ joystick.on('end', () => {
 
 // Load character model
 const loader = new GLTFLoader();
+
+// Load and place flat rocks
+function placeFlatRocks() {
+    loader.load('src/assets/models/Rock Flat.glb', (gltf) => {
+        // Create 30 flat rocks scattered around
+        for (let i = 0; i < 30; i++) {
+            const rock = gltf.scene.clone();
+            
+            // Random position within a radius
+            const angle = Math.random() * Math.PI * 2;
+            const radius = Math.random() * 200 + 50; // Between 50 and 250 units from center
+            rock.position.x = Math.cos(angle) * radius;
+            rock.position.z = Math.sin(angle) * radius;
+            
+            // Random rotation
+            rock.rotation.y = Math.random() * Math.PI * 2;
+            
+            // Random scale variation (0.8 to 1.2 of original size)
+            const scale = 0.8 + Math.random() * 0.4;
+            rock.scale.set(scale, scale, scale);
+            
+            scene.add(rock);
+        }
+    });
+}
+
+// Load and place tree & rock clusters
+function placeTreeRockClusters() {
+    loader.load('src/assets/models/Trees %26 Rocks.glb', (gltf) => {
+        // Create 15 clusters scattered around (fewer since they're larger)
+        for (let i = 0; i < 15; i++) {
+            const cluster = gltf.scene.clone();
+            
+            // Random position within a larger radius (since they're bigger)
+            const angle = Math.random() * Math.PI * 2;
+            const radius = Math.random() * 300 + 100; // Between 100 and 400 units from center
+            cluster.position.x = Math.cos(angle) * radius;
+            cluster.position.z = Math.sin(angle) * radius;
+            
+            // Random rotation
+            cluster.rotation.y = Math.random() * Math.PI * 2;
+            
+            // Random scale (0.9 to 1.1 of original size)
+            const scale = 0.9 + Math.random() * 0.2;
+            cluster.scale.set(scale, scale, scale);
+            
+            scene.add(cluster);
+        }
+    });
+}
+
+// Call both placement functions
+placeFlatRocks();
+placeTreeRockClusters();
+
 loader.load('/assets/models/Character Animated (2).glb', function(gltf) {
     character = gltf.scene;
     character.scale.set(1, 1, 1);
