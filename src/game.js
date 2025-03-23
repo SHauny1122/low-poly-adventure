@@ -296,9 +296,9 @@ function createChestAndGems(scene) {
     // Building positions for chest placement
     const chestLocations = [
         { x: 60, z: -105 },    // Barracks
-        { x: -155, z: 105 },   // Farm (5 units offset from building)
-        { x: 205, z: 155 },    // Sawmill (5 units offset)
-        { x: -105, z: -205 }   // Houses (5 units offset)
+        { x: -160, z: 110 },   // Farm (moved further out)
+        { x: 205, z: 155 },    // Sawmill
+        { x: -105, z: -205 }   // Houses
     ];
     
     chestLocations.forEach(location => {

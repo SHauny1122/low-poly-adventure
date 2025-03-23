@@ -84,11 +84,11 @@ export class Buildings {
                 // Create minimap marker
                 const marker = this.createMinimapMarker(config.position, config.markerColor);
                 
-                // Add building collision
+                // Add building collision with different radii
                 if (window.obstacles) {
                     window.obstacles.push({
                         position: config.position.clone(),
-                        radius: 15  // Simple single collision point with larger radius
+                        radius: config.name === 'Farm' ? 10 : 15  // Smaller radius for farm, 15 for others
                     });
                 }
                 
