@@ -650,12 +650,12 @@ function animate() {
             mixer.update(delta);
             if (!isAttacking) {
                 const speed = velocity.length() / (isSprinting ? SPRINT_SPEED : MOVEMENT_SPEED);
-                if (isSprinting) {
+                if (isSprinting && runAction) {  
                     runAction.setEffectiveWeight(speed);
                     walkAction.setEffectiveWeight(0);
                 } else {
                     walkAction.setEffectiveWeight(speed);
-                    runAction.setEffectiveWeight(0);
+                    if (runAction) runAction.setEffectiveWeight(0);  
                 }
                 idleAction.setEffectiveWeight(1 - speed);
             }

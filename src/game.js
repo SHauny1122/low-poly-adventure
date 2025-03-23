@@ -292,44 +292,67 @@ function createEnemies(scene, count = ENEMY_COUNT) {
 // Initialize chest and gems
 function createChestAndGems(scene) {
     const loader = new GLTFLoader();
-    loader.load('/assets/models/Chest.glb', (gltf) => {
-        const chest = gltf.scene;
-        chest.position.set(60, 0, -105); 
-        chest.scale.set(2, 2, 2);
-        chest.rotation.y = Math.PI / 4;
-        chest.traverse((child) => {
-            if (child.isMesh) {
-                child.castShadow = true;
-                child.receiveShadow = true;
+    
+    // Building positions for chest placement
+    const chestLocations = [
+        { x: 60, z: -105 },    // Barracks
+        { x: -155, z: 105 },   // Farm (5 units offset from building)
+        { x: 205, z: 155 },    // Sawmill (5 units offset)
+        { x: -105, z: -205 }   // Houses (5 units offset)
+    ];
+    
+    chestLocations.forEach(location => {
+        loader.load('/assets/models/Chest.glb', (gltf) => {
+            const chest = gltf.scene;
+            chest.position.set(location.x, 0, location.z);
+            chest.scale.set(2, 2, 2);
+            chest.rotation.y = Math.PI / 4;
+            chest.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+            });
+            scene.add(chest);
+
+            // Create gems around each chest
+            const gemCount = 5;  // 5 gems per chest
+            const radius = 2;    // 2 units radius around chest
+            
+            for (let i = 0; i < gemCount; i++) {
+                const angle = (i / gemCount) * Math.PI * 2;
+                const gemGeometry = new THREE.OctahedronGeometry(0.5);
+                const gemMaterial = new THREE.MeshPhongMaterial({
+                    color: 0x00ff00,
+                    shininess: 100,
+                    emissive: 0x00ff00,
+                    emissiveIntensity: 0.2
+                });
+                
+                const gem = new THREE.Mesh(gemGeometry, gemMaterial);
+                
+                // Position gems in a circle around the chest
+                gem.position.x = location.x + Math.cos(angle) * radius;
+                gem.position.y = 1;  // Floating 1 unit above ground
+                gem.position.z = location.z + Math.sin(angle) * radius;
+                
+                // Add gentle floating animation
+                const floatSpeed = 0.5 + Math.random() * 0.5;
+                const floatHeight = 0.2 + Math.random() * 0.2;
+                const startY = gem.position.y;
+                const startTime = Math.random() * Math.PI * 2;
+                
+                gem.userData = {
+                    floatSpeed,
+                    floatHeight,
+                    startY,
+                    startTime
+                };
+                
+                gems.push(gem);
+                scene.add(gem);
             }
         });
-        scene.add(chest);
-
-        // Create gems around chest
-        const gemGeometry = new THREE.OctahedronGeometry(0.5);
-        const gemMaterial = new THREE.MeshStandardMaterial({
-            color: 0x00ff00,
-            metalness: 0.7,
-            roughness: 0.3,
-            emissive: 0x00ff00,
-            emissiveIntensity: 0.2
-        });
-
-        for (let i = 0; i < 5; i++) {
-            const gem = new THREE.Mesh(gemGeometry, gemMaterial);
-            const angle = (i / 5) * Math.PI * 2;
-            const radius = 3;
-            gem.position.set(
-                chest.position.x + Math.cos(angle) * radius,
-                0.5,
-                chest.position.z + Math.sin(angle) * radius
-            );
-            gem.rotation.y = Math.random() * Math.PI * 2;
-            gem.castShadow = true;
-            gem.receiveShadow = true;
-            scene.add(gem);
-            gems.push(gem);
-        }
     });
 }
 
