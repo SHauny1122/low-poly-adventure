@@ -35,7 +35,7 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87CEEB); // Sky blue color
 
 // Add subtle fog
-scene.fog = new THREE.FogExp2(0x87CEEB, 0.005); // Same sky blue color, very subtle density
+scene.fog = new THREE.FogExp2(0x87CEEB, 0.006); // Increased density by 20%
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
 
@@ -87,71 +87,125 @@ const keys = {
     'Space': false
 };
 
-function animate() {
-    requestAnimationFrame(animate);
-    const delta = clock.getDelta();
+// Store obstacles for collision detection
+const obstacles = [];
+
+// Load and place flat rocks
+function placeFlatRocks() {
+    loader.load('src/assets/models/Rock Flat.glb', (gltf) => {
+        // Create 30 flat rocks scattered around
+        for (let i = 0; i < 30; i++) {
+            const rock = gltf.scene.clone();
+            
+            // Random position within a radius
+            const angle = Math.random() * Math.PI * 2;
+            const radius = Math.random() * 200 + 50; // Between 50 and 250 units from center
+            rock.position.x = Math.cos(angle) * radius;
+            rock.position.z = Math.sin(angle) * radius;
+            
+            // Random rotation
+            rock.rotation.y = Math.random() * Math.PI * 2;
+            
+            // Random scale variation (0.8 to 1.2 of original size)
+            const scale = 0.8 + Math.random() * 0.4;
+            rock.scale.set(scale, scale, scale);
+            
+            // Add collision data
+            obstacles.push({
+                position: rock.position.clone(),
+                radius: 4 * scale // Increased collision radius for better coverage
+            });
+            
+            scene.add(rock);
+        }
+    });
+}
+
+// Load and place tree & rock clusters
+function placeTreeRockClusters() {
+    loader.load('src/assets/models/Trees %26 Rocks.glb', (gltf) => {
+        // Create 15 clusters scattered around (fewer since they're larger)
+        for (let i = 0; i < 15; i++) {
+            const cluster = gltf.scene.clone();
+            
+            // Random position within a larger radius (since they're bigger)
+            const angle = Math.random() * Math.PI * 2;
+            const radius = Math.random() * 300 + 100; // Between 100 and 400 units from center
+            cluster.position.x = Math.cos(angle) * radius;
+            cluster.position.z = Math.sin(angle) * radius;
+            
+            // Random rotation
+            cluster.rotation.y = Math.random() * Math.PI * 2;
+            
+            // Random scale (0.9 to 1.1 of original size)
+            const scale = 0.9 + Math.random() * 0.2;
+            cluster.scale.set(scale, scale, scale);
+            
+            // Create multiple collision points to better match the rock shape
+            const collisionPoints = [
+                { x: 0, z: 0, radius: 8 },      // Center
+                { x: -6, z: 0, radius: 6 },     // Left side
+                { x: 6, z: 0, radius: 6 },      // Right side
+                { x: 0, z: -6, radius: 6 },     // Front
+                { x: 0, z: 6, radius: 6 }       // Back
+            ];
+            
+            // Add each collision point, transformed by cluster's position and rotation
+            collisionPoints.forEach(point => {
+                // Apply rotation to offset
+                const rotatedX = Math.cos(cluster.rotation.y) * point.x - Math.sin(cluster.rotation.y) * point.z;
+                const rotatedZ = Math.sin(cluster.rotation.y) * point.x + Math.cos(cluster.rotation.y) * point.z;
+                
+                obstacles.push({
+                    position: new THREE.Vector3(
+                        cluster.position.x + (rotatedX * scale),
+                        0,
+                        cluster.position.z + (rotatedZ * scale)
+                    ),
+                    radius: point.radius * scale
+                });
+            });
+            
+            scene.add(cluster);
+        }
+    });
+}
+
+// Check for collisions and get safe position
+function handleCollision(currentPos, targetPos) {
+    let hasCollision = false;
+    let closestDistance = Infinity;
+    let closestObstacle = null;
     
-    if (character) {
-        let moveZ = 0;
-        let rotate = 0;
+    for (const obstacle of obstacles) {
+        const dx = targetPos.x - obstacle.position.x;
+        const dz = targetPos.z - obstacle.position.z;
+        const distance = Math.sqrt(dx * dx + dz * dz);
         
-        // WASD controls (keeping original logic)
-        if (keys['KeyW']) moveZ -= 1;
-        if (keys['KeyS']) moveZ += 1;
-        if (keys['KeyA']) rotate += 1;  
-        if (keys['KeyD']) rotate -= 1;  
-        
-        // Joystick controls
-        if (joystickState.forward) moveZ -= joystickState.force || 1;
-        if (joystickState.backward) moveZ += joystickState.force || 1;
-        if (joystickState.left) rotate += joystickState.force || 1;  
-        if (joystickState.right) rotate -= joystickState.force || 1;  
-        
-        // Apply rotation
-        character.rotation.y += rotate * ROTATION_SPEED * delta;
-        
-        // Calculate movement direction based on character's rotation
-        const moveDirection = new THREE.Vector3(
-            Math.sin(character.rotation.y) * -moveZ,
-            0,
-            Math.cos(character.rotation.y) * -moveZ
-        );
-        
-        // Apply movement
-        const targetVelocity = moveDirection.multiplyScalar(MOVEMENT_SPEED);
-        velocity.lerp(targetVelocity, ACCELERATION * delta);
-        
-        // Update character position
-        character.position.addScaledVector(velocity, delta);
-        
-        // Update animations
-        if (mixer) {
-            mixer.update(delta);
-            if (!isAttacking) {
-                const speed = velocity.length() / MOVEMENT_SPEED;
-                walkAction.setEffectiveWeight(speed);
-                idleAction.setEffectiveWeight(1 - speed);
+        if (distance < obstacle.radius + 2) {
+            hasCollision = true;
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestObstacle = obstacle;
             }
         }
-        
-        // Camera follow logic - always behind character
-        const idealOffset = new THREE.Vector3(
-            -Math.sin(character.rotation.y) * CAMERA_DISTANCE,
-            CAMERA_HEIGHT,
-            -Math.cos(character.rotation.y) * CAMERA_DISTANCE
-        );
-        
-        // Position camera behind character
-        camera.position.lerp(character.position.clone().add(idealOffset), 0.1);
-        camera.lookAt(
-            character.position.x,
-            character.position.y + 2,
-            character.position.z
-        );
     }
     
-    renderer.render(scene, camera);
-    minimapRenderer.render(minimapScene, minimapCamera);
+    if (hasCollision && closestObstacle) {
+        // Calculate push-back direction from closest collision point
+        const dx = targetPos.x - closestObstacle.position.x;
+        const dz = targetPos.z - closestObstacle.position.z;
+        const distance = Math.sqrt(dx * dx + dz * dz);
+        
+        const pushX = dx / distance;
+        const pushZ = dz / distance;
+        
+        // Move to safe position with smoother push-back
+        targetPos.x = closestObstacle.position.x + (pushX * (closestObstacle.radius + 2));
+        targetPos.z = closestObstacle.position.z + (pushZ * (closestObstacle.radius + 2));
+    }
+    
+    return hasCollision;
 }
 
 // Joystick state
@@ -214,56 +268,6 @@ joystick.on('end', () => {
 
 // Load character model
 const loader = new GLTFLoader();
-
-// Load and place flat rocks
-function placeFlatRocks() {
-    loader.load('src/assets/models/Rock Flat.glb', (gltf) => {
-        // Create 30 flat rocks scattered around
-        for (let i = 0; i < 30; i++) {
-            const rock = gltf.scene.clone();
-            
-            // Random position within a radius
-            const angle = Math.random() * Math.PI * 2;
-            const radius = Math.random() * 200 + 50; // Between 50 and 250 units from center
-            rock.position.x = Math.cos(angle) * radius;
-            rock.position.z = Math.sin(angle) * radius;
-            
-            // Random rotation
-            rock.rotation.y = Math.random() * Math.PI * 2;
-            
-            // Random scale variation (0.8 to 1.2 of original size)
-            const scale = 0.8 + Math.random() * 0.4;
-            rock.scale.set(scale, scale, scale);
-            
-            scene.add(rock);
-        }
-    });
-}
-
-// Load and place tree & rock clusters
-function placeTreeRockClusters() {
-    loader.load('src/assets/models/Trees %26 Rocks.glb', (gltf) => {
-        // Create 15 clusters scattered around (fewer since they're larger)
-        for (let i = 0; i < 15; i++) {
-            const cluster = gltf.scene.clone();
-            
-            // Random position within a larger radius (since they're bigger)
-            const angle = Math.random() * Math.PI * 2;
-            const radius = Math.random() * 300 + 100; // Between 100 and 400 units from center
-            cluster.position.x = Math.cos(angle) * radius;
-            cluster.position.z = Math.sin(angle) * radius;
-            
-            // Random rotation
-            cluster.rotation.y = Math.random() * Math.PI * 2;
-            
-            // Random scale (0.9 to 1.1 of original size)
-            const scale = 0.9 + Math.random() * 0.2;
-            cluster.scale.set(scale, scale, scale);
-            
-            scene.add(cluster);
-        }
-    });
-}
 
 // Call both placement functions
 placeFlatRocks();
@@ -553,4 +557,83 @@ window.addEventListener('resize', () => {
 });
 
 // Start animation loop
+function animate() {
+    requestAnimationFrame(animate);
+    const delta = clock.getDelta();
+    
+    if (character) {
+        let moveZ = 0;
+        let rotate = 0;
+        
+        // WASD controls (keeping original logic)
+        if (keys['KeyW']) moveZ -= 1;
+        if (keys['KeyS']) moveZ += 1;
+        if (keys['KeyA']) rotate += 1;  
+        if (keys['KeyD']) rotate -= 1;  
+        
+        // Joystick controls
+        if (joystickState.forward) moveZ -= joystickState.force || 1;
+        if (joystickState.backward) moveZ += joystickState.force || 1;
+        if (joystickState.left) rotate += joystickState.force || 1;  
+        if (joystickState.right) rotate -= joystickState.force || 1;  
+        
+        // Apply rotation
+        character.rotation.y += rotate * ROTATION_SPEED * delta;
+        
+        // Calculate movement direction based on character's rotation
+        const moveDirection = new THREE.Vector3(
+            Math.sin(character.rotation.y) * -moveZ,
+            0,
+            Math.cos(character.rotation.y) * -moveZ
+        );
+        
+        // Apply movement
+        const targetVelocity = moveDirection.multiplyScalar(MOVEMENT_SPEED);
+        velocity.lerp(targetVelocity, ACCELERATION * delta);
+        
+        // Calculate next position
+        const nextPosition = character.position.clone().add(velocity.clone().multiplyScalar(delta));
+        
+        // Handle collisions and get safe position
+        if (handleCollision(character.position, nextPosition)) {
+            // On collision, stop movement completely
+            velocity.set(0, 0, 0);
+            // Ensure we use the safe position from collision handling
+            character.position.copy(nextPosition);
+        } else {
+            // No collision, proceed with movement
+            character.position.copy(nextPosition);
+        }
+        
+        // Update animations
+        if (mixer) {
+            mixer.update(delta);
+            if (!isAttacking) {
+                const speed = velocity.length() / MOVEMENT_SPEED;
+                walkAction.setEffectiveWeight(speed);
+                idleAction.setEffectiveWeight(1 - speed);
+            }
+        }
+        
+        // Camera follow logic - always behind character
+        const idealOffset = new THREE.Vector3(
+            -Math.sin(character.rotation.y) * CAMERA_DISTANCE,
+            CAMERA_HEIGHT,
+            -Math.cos(character.rotation.y) * CAMERA_DISTANCE
+        );
+        
+        // Position camera behind character
+        camera.position.lerp(character.position.clone().add(idealOffset), 0.1);
+        camera.lookAt(
+            character.position.x,
+            character.position.y + 2,
+            character.position.z
+        );
+    }
+    
+    renderer.render(scene, camera);
+    minimapRenderer.render(minimapScene, minimapCamera);
+    updateMinimap();
+}
+
 animate();
