@@ -32,7 +32,11 @@ const ENEMY_SETTINGS = {
 
 // Scene setup
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x87ceeb);
+scene.background = new THREE.Color(0x87CEEB); // Sky blue color
+
+// Add subtle fog
+scene.fog = new THREE.FogExp2(0x87CEEB, 0.005); // Same sky blue color, very subtle density
+
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
 
 // Set initial camera position behind where character will spawn
@@ -42,6 +46,12 @@ camera.lookAt(new THREE.Vector3(0, 0, 0));
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
+
+// Mobile optimization - reduce resolution on mobile devices
+if (/Android|iPhone/i.test(navigator.userAgent)) {
+    renderer.setPixelRatio(Math.min(0.7, window.devicePixelRatio));
+}
+
 document.body.appendChild(renderer.domElement);
 
 // Lighting
