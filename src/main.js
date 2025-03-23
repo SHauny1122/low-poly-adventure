@@ -142,24 +142,7 @@ function placeTreeRockClusters() {
             const scale = 0.8 + Math.random() * 0.4;
             cluster.scale.set(scale, scale, scale);
             
-            // Add collision data - reduced radius and fewer points
-            const collisionPoints = [
-                { x: 0, z: 0 },     // Center only
-                { x: 0, z: 1 },     // Front
-                { x: 0, z: -1 }     // Back
-            ];
-            
-            collisionPoints.forEach(point => {
-                obstacles.push({
-                    position: new THREE.Vector3(
-                        cluster.position.x + point.x * 6 * scale,
-                        cluster.position.y,
-                        cluster.position.z + point.z * 6 * scale
-                    ),
-                    radius: 4 * scale  // Significantly reduced radius
-                });
-            });
-            
+            // Add to scene
             scene.add(cluster);
         }
     });
