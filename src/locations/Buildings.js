@@ -84,6 +84,30 @@ export class Buildings {
                 // Create minimap marker
                 const marker = this.createMinimapMarker(config.position, config.markerColor);
                 
+                // Add building to global obstacles array for collision detection
+                if (window.obstacles) {
+                    // Add multiple collision points for better coverage
+                    const buildingSize = 15 * config.scale; // Base size * scale
+                    const collisionPoints = [
+                        { x: 0, z: 0 },    // Center
+                        { x: 1, z: 1 },    // Front right
+                        { x: -1, z: 1 },   // Front left
+                        { x: 1, z: -1 },   // Back right
+                        { x: -1, z: -1 }   // Back left
+                    ];
+                    
+                    collisionPoints.forEach(point => {
+                        window.obstacles.push({
+                            position: new THREE.Vector3(
+                                config.position.x + point.x * buildingSize,
+                                config.position.y,
+                                config.position.z + point.z * buildingSize
+                            ),
+                            radius: buildingSize * 0.7 // Slightly smaller than full size for better feel
+                        });
+                    });
+                }
+                
                 this.buildings.push({
                     name: config.name,
                     model: model,

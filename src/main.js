@@ -93,6 +93,7 @@ const keys = {
 
 // Store obstacles for collision detection
 const obstacles = [];
+window.obstacles = obstacles; // Make obstacles available globally for buildings
 
 // Load and place flat rocks
 function placeFlatRocks() {
@@ -114,11 +115,7 @@ function placeFlatRocks() {
             const scale = 0.8 + Math.random() * 0.4;
             rock.scale.set(scale, scale, scale);
             
-            // Add collision data
-            obstacles.push({
-                position: rock.position.clone(),
-                radius: 2 * scale // Reduced collision radius for flat rocks
-            });
+            // Removed collision data for flat rocks since they're decorative
             
             scene.add(rock);
         }
@@ -142,31 +139,24 @@ function placeTreeRockClusters() {
             cluster.rotation.y = Math.random() * Math.PI * 2;
             
             // Random scale (0.9 to 1.1 of original size)
-            const scale = 0.9 + Math.random() * 0.2;
+            const scale = 0.8 + Math.random() * 0.4;
             cluster.scale.set(scale, scale, scale);
             
-            // Create multiple collision points to better match the rock shape
+            // Add collision data - reduced radius and fewer points
             const collisionPoints = [
-                { x: 0, z: 0, radius: 8 },      // Center
-                { x: -6, z: 0, radius: 6 },     // Left side
-                { x: 6, z: 0, radius: 6 },      // Right side
-                { x: 0, z: -6, radius: 6 },     // Front
-                { x: 0, z: 6, radius: 6 }       // Back
+                { x: 0, z: 0 },     // Center only
+                { x: 0, z: 1 },     // Front
+                { x: 0, z: -1 }     // Back
             ];
             
-            // Add each collision point, transformed by cluster's position and rotation
             collisionPoints.forEach(point => {
-                // Apply rotation to offset
-                const rotatedX = Math.cos(cluster.rotation.y) * point.x - Math.sin(cluster.rotation.y) * point.z;
-                const rotatedZ = Math.sin(cluster.rotation.y) * point.x + Math.cos(cluster.rotation.y) * point.z;
-                
                 obstacles.push({
                     position: new THREE.Vector3(
-                        cluster.position.x + (rotatedX * scale),
-                        0,
-                        cluster.position.z + (rotatedZ * scale)
+                        cluster.position.x + point.x * 6 * scale,
+                        cluster.position.y,
+                        cluster.position.z + point.z * 6 * scale
                     ),
-                    radius: point.radius * scale
+                    radius: 4 * scale  // Significantly reduced radius
                 });
             });
             
@@ -377,7 +367,7 @@ function createDagger() {
     
     // Guard
     const guardGeometry = new THREE.BoxGeometry(0.0025, 0.0007, 0.0007);
-    const guardMaterial = new THREE.MeshStandardMaterial({
+    const guardMaterial = new THREE.MeshBasicMaterial({
         color: 0x8B8878,
         metalness: 0.9,
         roughness: 0.4,
