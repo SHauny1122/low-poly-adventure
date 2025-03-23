@@ -88,7 +88,10 @@ export class Buildings {
                 if (window.obstacles) {
                     window.obstacles.push({
                         position: config.position.clone(),
-                        radius: config.name === 'Farm' ? 10 : 15  // Smaller radius for farm, 15 for others
+                        // Adjust radius based on building type
+                        radius: config.name === 'Sawmill' ? 20 : // Larger for Sawmill
+                                (config.name === 'Barracks' ? 8 : // Even smaller for Barracks
+                                (config.name === 'Farm' ? 10 : 15)) // Farm and others
                     });
                 }
                 

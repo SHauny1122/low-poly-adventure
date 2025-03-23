@@ -296,10 +296,15 @@ function createChestAndGems(scene) {
     // Building positions for chest placement
     const chestLocations = [
         { x: 60, z: -105 },    // Barracks
-        { x: -160, z: 110 },   // Farm (moved further out)
-        { x: 205, z: 155 },    // Sawmill
-        { x: -105, z: -205 }   // Houses
+        { x: -160, z: 110 },   // Farm
+        { x: 220, z: 170 },    // Sawmill (moved further out from building)
+        { x: -110, z: -215 }   // Houses (moved further away)
     ];
+    
+    // Make gems array globally accessible
+    if (!window.gems) {
+        window.gems = [];
+    }
     
     chestLocations.forEach(location => {
         loader.load('/assets/models/Chest.glb', (gltf) => {
@@ -349,7 +354,7 @@ function createChestAndGems(scene) {
                     startTime
                 };
                 
-                gems.push(gem);
+                window.gems.push(gem);
                 scene.add(gem);
             }
         });
@@ -521,8 +526,8 @@ window.addEventListener('beforeRender', (e) => {
     
     // Check for gem collection
     if (scene) {  
-        for (let i = gems.length - 1; i >= 0; i--) {
-            const gem = gems[i];
+        for (let i = window.gems.length - 1; i >= 0; i--) {
+            const gem = window.gems[i];
             if (!gem) continue;
             
             // Calculate distance ignoring Y axis
@@ -532,7 +537,7 @@ window.addEventListener('beforeRender', (e) => {
             
             if (distance < 4) {
                 scene.remove(gem);
-                gems.splice(i, 1);
+                window.gems.splice(i, 1);
                 gemsCollected++;
                 console.log('Gem collected! Total:', gemsCollected);
             }

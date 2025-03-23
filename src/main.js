@@ -122,18 +122,40 @@ function placeFlatRocks() {
     });
 }
 
+// Function to check if a position is too close to buildings
+function isTooCloseToBuildings(x, z) {
+    const buildingPositions = [
+        { x: 50, z: -100 },    // Barracks
+        { x: -150, z: 100 },   // Farm
+        { x: 200, z: 150 },    // Sawmill
+        { x: -100, z: -200 }   // Houses
+    ];
+    
+    const minDistance = 30; // Minimum distance from buildings
+    
+    return buildingPositions.some(pos => {
+        const dx = x - pos.x;
+        const dz = z - pos.z;
+        return Math.sqrt(dx * dx + dz * dz) < minDistance;
+    });
+}
+
 // Load and place tree & rock clusters
 function placeTreeRockClusters() {
+    const loader = new GLTFLoader();
     loader.load('src/assets/models/Trees %26 Rocks.glb', (gltf) => {
-        // Create 15 clusters scattered around (fewer since they're larger)
+        // Create 15 clusters
         for (let i = 0; i < 15; i++) {
             const cluster = gltf.scene.clone();
             
-            // Random position within a larger radius (since they're bigger)
-            const angle = Math.random() * Math.PI * 2;
-            const radius = Math.random() * 300 + 100; // Between 100 and 400 units from center
-            cluster.position.x = Math.cos(angle) * radius;
-            cluster.position.z = Math.sin(angle) * radius;
+            // Keep trying until we find a valid position
+            let x, z;
+            do {
+                x = Math.random() * 400 - 200;  // -200 to 200
+                z = Math.random() * 400 - 200;  // -200 to 200
+            } while (isTooCloseToBuildings(x, z));
+            
+            cluster.position.set(x, 0, z);
             
             // Random rotation
             cluster.rotation.y = Math.random() * Math.PI * 2;
@@ -145,6 +167,8 @@ function placeTreeRockClusters() {
             // Add to scene
             scene.add(cluster);
         }
+    }, undefined, (error) => {
+        console.error('Error loading Trees & Rocks:', error);
     });
 }
 
@@ -579,6 +603,11 @@ window.addEventListener('resize', () => {
     updateMinimapSize();
 });
 
+// Gems
+const gems = window.gems || [];
+
+// No need to load gem model - we're using the octahedron gems from game.js
+
 // Start animation loop
 function animate() {
     requestAnimationFrame(animate);
@@ -658,6 +687,35 @@ function animate() {
             character.position.y + 2,
             character.position.z
         );
+    }
+    
+    // Check for gem collection
+    if (window.gems && window.gems.length > 0) {
+        const playerPosition = character.position;
+        const collectionRadius = 2; // Collection radius in units
+        
+        for (let i = window.gems.length - 1; i >= 0; i--) {
+            const gem = window.gems[i];
+            const distance = playerPosition.distanceTo(gem.position);
+            
+            if (distance < collectionRadius) {
+                // Remove gem from scene and array
+                scene.remove(gem);
+                window.gems.splice(i, 1);
+                
+                // Optional: Add collection effect/sound here
+                console.log('Gem collected!');
+            } else {
+                // Animate floating gems
+                const time = performance.now() * 0.001; // Current time in seconds
+                const floatData = gem.userData;
+                if (floatData) {
+                    gem.position.y = floatData.startY + 
+                        Math.sin(time * floatData.floatSpeed + floatData.startTime) * 
+                        floatData.floatHeight;
+                }
+            }
+        }
     }
     
     renderer.render(scene, camera);
