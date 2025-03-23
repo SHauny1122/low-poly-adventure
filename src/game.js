@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { LocationManager } from './locations/LocationManager.js';
 import { Buildings } from './locations/Buildings.js';
+import { EnemyManager } from './enemies/EnemyManager.js';
 
 // Game state
 let scene = null;
@@ -231,62 +232,18 @@ function createGrassPatches(scene, count = GRASS_PATCH_COUNT) {
     });
 }
 
-// Initialize enemies with reduced count
-function createEnemies(scene, count = ENEMY_COUNT) {
-    const loader = new GLTFLoader();
-    loader.load('/assets/models/Skeleton.glb', (gltf) => {
-        const enemyModel = gltf.scene;
-        const enemyAnimations = gltf.animations;
-        
-        for (let i = 0; i < count; i++) {
-            const enemy = enemyModel.clone();
-            const scale = 1.2;
-            enemy.scale.set(scale, scale, scale);
-            
-            let validPosition = false;
-            let attempts = 0;
-            while (!validPosition && attempts < 50) {
-                const x = (Math.random() - 0.5) * 600;
-                const z = (Math.random() - 0.5) * 600;
-                
-                const distanceFromSpawn = Math.sqrt(x * x + z * z);
-                if (distanceFromSpawn > 50) {
-                    validPosition = true;
-                    enemy.position.set(x, 0, z);
-                }
-                attempts++;
-            }
-            
-            const mixer = new THREE.AnimationMixer(enemy);
-            const idleAnim = mixer.clipAction(enemyAnimations.find(a => a.name.toLowerCase().includes('idle')));
-            const walkAnim = mixer.clipAction(enemyAnimations.find(a => a.name.toLowerCase().includes('walk')));
-            const attackAnim = mixer.clipAction(enemyAnimations.find(a => a.name.toLowerCase().includes('attack')));
-            
-            idleAnim.play();
-            
-            enemy.castShadow = true;
-            enemy.receiveShadow = true;
-            scene.add(enemy);
-            allObjects.push({ 
-                object: enemy, 
-                type: 'enemy',
-                position: enemy.position 
-            });
-            
-            enemies.push({
-                mesh: enemy,
-                mixer: mixer,
-                animations: {
-                    idle: idleAnim,
-                    walk: walkAnim,
-                    attack: attackAnim
-                },
-                health: 100,
-                state: 'idle',
-                target: null
-            });
-        }
-    });
+// Initialize enemies
+let enemyManager;
+
+export function createEnemies(scene) {
+    // Create enemy manager and make it globally accessible
+    enemyManager = new EnemyManager(scene);
+    window.enemyManager = enemyManager;
+    
+    // Add one test enemy at the Barracks, slightly offset for visibility
+    const barracksPosition = new THREE.Vector3(60, 0, -90);
+    enemyManager.createEnemy(barracksPosition);
+    console.log('Creating enemy at:', barracksPosition);
 }
 
 // Initialize chest and gems
@@ -469,48 +426,68 @@ function updateObjectVisibility(playerPosition) {
     });
 }
 
-// Update enemies
-function updateEnemies(delta, playerPosition) {
-    enemies.forEach(enemy => {
-        enemy.mixer.update(delta);
-        
-        const distanceToPlayer = enemy.mesh.position.distanceTo(playerPosition);
-        
-        if (distanceToPlayer < 15 && enemy.state !== 'attack') {
-            enemy.state = 'attack';
-            enemy.animations.idle.fadeOut(0.2);
-            enemy.animations.walk.fadeOut(0.2);
-            enemy.animations.attack.reset().fadeIn(0.2).play();
-        } else if (distanceToPlayer < 30 && enemy.state !== 'walk') {
-            enemy.state = 'walk';
-            enemy.animations.idle.fadeOut(0.2);
-            enemy.animations.attack.fadeOut(0.2);
-            enemy.animations.walk.reset().fadeIn(0.2).play();
-            
-            const direction = new THREE.Vector3()
-                .subVectors(playerPosition, enemy.mesh.position)
-                .normalize();
-            enemy.mesh.position.addScaledVector(direction, delta * 5);
-            enemy.mesh.lookAt(playerPosition);
-        } else if (distanceToPlayer >= 30 && enemy.state !== 'idle') {
-            enemy.state = 'idle';
-            enemy.animations.walk.fadeOut(0.2);
-            enemy.animations.attack.fadeOut(0.2);
-            enemy.animations.idle.reset().fadeIn(0.2).play();
-        }
-    });
-}
+// Wait for the scene to be ready
+window.addEventListener('sceneReady', (e) => {
+    scene = e.detail.scene;
+    const camera = e.detail.camera;
+    
+    const terrain = createTerrain();
+    scene.add(terrain);
+    
+    // Create environment
+    createTrees(scene, TREE_COUNT);
+    createRocks(scene, ROCK_COUNT);
+    createGrassPatches(scene, GRASS_PATCH_COUNT);
+    createShrubs(scene);
+    createClouds(scene);
+    createChestAndGems(scene);
+    
+    // Create enemies
+    createEnemies(scene);
+    
+    // Create buildings and locations
+    new Buildings(scene, scene);
+    
+    locationManager = new LocationManager(scene, scene);
+});
 
 // Update game state with culling
 window.addEventListener('beforeRender', (e) => {
     const { playerPosition, delta } = e.detail;
+
+    // Debug player position
+    if (playerPosition) {
+        console.log('Player position:', 
+            Math.round(playerPosition.x), 
+            Math.round(playerPosition.z)
+        );
+    }
+    
     updateObjectVisibility(playerPosition);
     
     if (locationManager) {
         locationManager.update(playerPosition);
     }
     
-    updateEnemies(delta, playerPosition);
+    // Update enemies with delta time
+    if (enemyManager && enemyManager.enemies.length > 0) {
+        const enemy = enemyManager.enemies[0];
+        
+        // Debug enemy state
+        console.log('Enemy state:', enemy.state);
+        
+        // Convert delta to seconds for animation mixer
+        const deltaSeconds = delta / 1000;
+        enemyManager.update(playerPosition, deltaSeconds);
+    }
+    
+    // Check enemy collisions and prevent player from moving through enemies
+    if (enemyManager && enemyManager.checkCollisions(playerPosition)) {
+        // Move player back to previous safe position
+        if (e.detail.previousPosition) {
+            playerPosition.copy(e.detail.previousPosition);
+        }
+    }
     
     // Update cloud positions
     clouds.forEach(cloud => {
@@ -543,26 +520,4 @@ window.addEventListener('beforeRender', (e) => {
             }
         }
     }
-});
-
-// Wait for the scene to be ready
-window.addEventListener('sceneReady', (e) => {
-    scene = e.detail.scene;
-    const camera = e.detail.camera;
-    
-    const terrain = createTerrain();
-    scene.add(terrain);
-    
-    createTrees(scene, TREE_COUNT);
-    createRocks(scene, ROCK_COUNT);
-    createEnemies(scene, ENEMY_COUNT);
-    createChestAndGems(scene);
-    createGrassPatches(scene, GRASS_PATCH_COUNT);
-    createShrubs(scene);
-    createClouds(scene);
-    
-    // Initialize buildings
-    new Buildings(scene, scene);
-    
-    locationManager = new LocationManager(scene, scene);
 });

@@ -405,16 +405,30 @@ function createDagger() {
 
 // Attack function
 function attack() {
-    if (!isAttacking) {
+    if (!isAttacking && character) {
         isAttacking = true;
+        
+        // Play attack animation
         attackAction.reset();
         attackAction.setEffectiveWeight(1);
+        attackAction.setLoop(THREE.LoopOnce);
         attackAction.play();
         
-        // No blending during attack
-        if (velocity.lengthSq() > 0.1) {
-            walkAction.setEffectiveWeight(0);  // No walk animation during attack
+        // Handle enemy damage
+        if (window.enemyManager) {
+            window.enemyManager.handlePlayerAttack(character.position);
         }
+        
+        // Reset after animation finishes
+        setTimeout(() => {
+            isAttacking = false;
+            attackAction.setEffectiveWeight(0);
+            if (velocity.lengthSq() > 0.1) {
+                walkAction.setEffectiveWeight(1);
+            } else {
+                idleAction.setEffectiveWeight(1);
+            }
+        }, 500); // Half second attack animation
     }
 }
 
@@ -643,6 +657,9 @@ function animate() {
         const targetVelocity = moveDirection.multiplyScalar(isSprinting ? SPRINT_SPEED : MOVEMENT_SPEED);
         velocity.lerp(targetVelocity, ACCELERATION * delta);
         
+        // Store previous position for collision handling
+        const previousPosition = character.position.clone();
+        
         // Calculate next position
         const nextPosition = character.position.clone().add(velocity.clone().multiplyScalar(delta));
         
@@ -650,8 +667,6 @@ function animate() {
         if (handleCollision(character.position, nextPosition)) {
             // On collision, stop movement completely
             velocity.set(0, 0, 0);
-            // Ensure we use the safe position from collision handling
-            character.position.copy(nextPosition);
         } else {
             // No collision, proceed with movement
             character.position.copy(nextPosition);
@@ -687,40 +702,23 @@ function animate() {
             character.position.y + 2,
             character.position.z
         );
-    }
-    
-    // Check for gem collection
-    if (window.gems && window.gems.length > 0) {
-        const playerPosition = character.position;
-        const collectionRadius = 2; // Collection radius in units
         
-        for (let i = window.gems.length - 1; i >= 0; i--) {
-            const gem = window.gems[i];
-            const distance = playerPosition.distanceTo(gem.position);
-            
-            if (distance < collectionRadius) {
-                // Remove gem from scene and array
-                scene.remove(gem);
-                window.gems.splice(i, 1);
-                
-                // Optional: Add collection effect/sound here
-                console.log('Gem collected!');
-            } else {
-                // Animate floating gems
-                const time = performance.now() * 0.001; // Current time in seconds
-                const floatData = gem.userData;
-                if (floatData) {
-                    gem.position.y = floatData.startY + 
-                        Math.sin(time * floatData.floatSpeed + floatData.startTime) * 
-                        floatData.floatHeight;
-                }
+        // Update game state
+        window.dispatchEvent(new CustomEvent('beforeRender', {
+            detail: {
+                playerPosition: character.position,
+                previousPosition: previousPosition,
+                delta: delta * 1000 // Convert to milliseconds for consistency
             }
-        }
+        }));
     }
     
+    // Update minimap
+    updateMinimap();
+    
+    // Render scene
     renderer.render(scene, camera);
     minimapRenderer.render(minimapScene, minimapCamera);
-    updateMinimap();
 }
 
 animate();
