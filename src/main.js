@@ -3,6 +3,14 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import nipplejs from 'nipplejs';
 import './game.js';
+import { LocationManager } from './locations/LocationManager.js';
+import { StagManager } from './StagManager.js';
+
+// Game state variables
+let character = null;
+let enemyManager = null;
+let locationManager = null;
+let stagManager = null;
 
 // Game constants
 const MOVEMENT_SPEED = 8;  // Slightly slower for more natural movement
@@ -14,7 +22,7 @@ const ROTATION_SMOOTHING = 0.15;  // Smooth out the rotation
 const CAMERA_HEIGHT = 5;  // Increased camera height slightly
 const CAMERA_DISTANCE = 12;  // Increased distance for better view
 const CHARACTER_HEIGHT = 0;
-const SPAWN_POINT = new THREE.Vector3(0, 0, 0);
+const SPAWN_POINT = new THREE.Vector3(50, 0, -80); // Near the barracks, but safe from enemies
 
 // Combat settings
 const COMBAT_SETTINGS = {
@@ -70,7 +78,6 @@ const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.0);
 scene.add(hemisphereLight);
 
 // Character movement
-let character;
 let mixer;
 let walkAction;
 let idleAction;
@@ -97,6 +104,7 @@ window.obstacles = obstacles; // Make obstacles available globally for buildings
 
 // Load and place flat rocks
 function placeFlatRocks() {
+    const loader = new GLTFLoader();
     loader.load('src/assets/models/Rock Flat.glb', (gltf) => {
         // Create 30 flat rocks scattered around
         for (let i = 0; i < 30; i++) {
@@ -460,8 +468,8 @@ const minimapScene = new THREE.Scene();
 minimapScene.background = new THREE.Color(0x2E7D32); // Match background color
 
 // Create player marker for minimap (larger blue triangle)
-const markerGeometry = new THREE.ConeGeometry(4, 8, 3);
-const markerMaterial = new THREE.MeshBasicMaterial({ color: 0x4169E1 }); // Royal blue
+const markerGeometry = new THREE.ConeGeometry(6, 12, 3); // Made bigger (was 4, 8)
+const markerMaterial = new THREE.MeshBasicMaterial({ color: 0x00BFFF }); // Changed to bright cyan blue
 const playerMarker = new THREE.Mesh(markerGeometry, markerMaterial);
 playerMarker.rotation.x = Math.PI / 2;
 playerMarker.position.y = 2;
@@ -622,6 +630,16 @@ const gems = window.gems || [];
 
 // No need to load gem model - we're using the octahedron gems from game.js
 
+// Initialize game objects
+// Initialize game world
+function initializeWorld() {
+    // Create stags
+    stagManager = new StagManager(scene);
+    
+    // Start animation loop
+    animate();
+}
+
 // Start animation loop
 function animate() {
     requestAnimationFrame(animate);
@@ -688,6 +706,12 @@ function animate() {
             }
         }
         
+        // Update stags
+        if (stagManager) stagManager.update(delta);
+        
+        // Update enemies
+        if (enemyManager) enemyManager.update(delta);
+        
         // Camera follow logic - always behind character
         const idealOffset = new THREE.Vector3(
             -Math.sin(character.rotation.y) * CAMERA_DISTANCE,
@@ -721,4 +745,5 @@ function animate() {
     minimapRenderer.render(minimapScene, minimapCamera);
 }
 
+initializeWorld();
 animate();
