@@ -45,10 +45,13 @@ export class InventorySystem {
     }
     
     addGems(type, amount) {
+        console.log(`InventorySystem.addGems called with type: ${type}, amount: ${amount}`);
         if (this.gems.hasOwnProperty(type)) {
             this.gems[type] += amount;
-            this.updateUI();
             console.log(`Added ${amount} ${type} gems. New total: ${this.gems[type]}`);
+            this.updateUI();
+        } else {
+            console.error(`Invalid gem type: ${type}`);
         }
     }
     

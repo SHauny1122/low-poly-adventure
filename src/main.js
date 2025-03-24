@@ -673,7 +673,7 @@ function checkCollisions() {
             if (distance < 2) {  // If character is close enough
                 // Add to inventory
                 const gemType = child.userData.type;
-                console.log(`Collecting ${gemType} gem`);
+                console.log(`Collecting ${gemType} gem with userData:`, child.userData);
                 inventorySystem.addGems(gemType, 1);
                 
                 // Remove gem from scene

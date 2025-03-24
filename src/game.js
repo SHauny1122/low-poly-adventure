@@ -312,6 +312,7 @@ function createChestAndGems(scene) {
 
 // Helper function to spawn gems at a chest
 function spawnGemsAtChest(scene, chest) {
+    console.log('Spawning green gems at chest');
     const gemCount = 3;
     const radius = 2;
     
@@ -341,6 +342,7 @@ function spawnGemsAtChest(scene, chest) {
             floatSpeed: 0.5 + Math.random() * 0.5,
             startTime: Math.random() * Math.PI * 2
         };
+        console.log('Created green gem with userData:', gem.userData);
         
         // Enable shadows
         gem.castShadow = true;
