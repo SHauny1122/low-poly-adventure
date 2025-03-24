@@ -314,7 +314,7 @@ function createChestAndGems(scene) {
 function spawnGemsAtChest(scene, chest) {
     console.log('Spawning green gems at chest');
     const gemCount = 3;
-    const radius = 2;
+    const radius = 1; // Reduced from 2 to keep gems closer
     
     for (let i = 0; i < gemCount; i++) {
         const angle = (i / gemCount) * Math.PI * 2;
@@ -331,7 +331,7 @@ function spawnGemsAtChest(scene, chest) {
         });
         
         const gem = new THREE.Mesh(gemGeometry, gemMaterial);
-        gem.position.set(x, chest.position.y + 1, z);
+        gem.position.set(x, chest.position.y + 0.5, z); // Lowered from +1 to +0.5 to make it easier to reach
         
         // Add gem properties for collection
         gem.userData = {
