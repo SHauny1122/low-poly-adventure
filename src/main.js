@@ -109,7 +109,7 @@ window.obstacles = obstacles; // Make obstacles available globally for buildings
 // Load and place flat rocks
 function placeFlatRocks() {
     const loader = new GLTFLoader();
-    loader.load('src/assets/models/Rock Flat.glb', (gltf) => {
+    loader.load('/models/Rock Flat.glb', (gltf) => {
         // Create 30 flat rocks scattered around
         for (let i = 0; i < 30; i++) {
             const rock = gltf.scene.clone();
@@ -155,7 +155,7 @@ function isTooCloseToBuildings(x, z) {
 // Load and place tree & rock clusters
 function placeTreeRockClusters() {
     const loader = new GLTFLoader();
-    loader.load('src/assets/models/Trees %26 Rocks.glb', (gltf) => {
+    loader.load('/models/Trees %26 Rocks.glb', (gltf) => {
         // Create 15 clusters
         for (let i = 0; i < 15; i++) {
             const cluster = gltf.scene.clone();
@@ -286,7 +286,7 @@ const loader = new GLTFLoader();
 placeFlatRocks();
 placeTreeRockClusters();
 
-loader.load('/assets/models/Character Animated (2).glb', function(gltf) {
+loader.load('/models/Character Animated (2).glb', function(gltf) {
     character = gltf.scene;
     character.scale.set(1, 1, 1);
     character.position.copy(SPAWN_POINT);
@@ -304,7 +304,7 @@ loader.load('/assets/models/Character Animated (2).glb', function(gltf) {
     attackAction = mixer.clipAction(animations.find(a => a.name.toLowerCase().includes('attack')));
     
     // Load run animation from separate file
-    new GLTFLoader().load('src/assets/models/Character Animated (4).glb', function(runGltf) {
+    new GLTFLoader().load('/models/Character Animated (4).glb', function(runGltf) {
         const runAnim = runGltf.animations.find(a => a.name.toLowerCase().includes('run'));
         if (runAnim) {
             runAction = mixer.clipAction(runAnim);
@@ -400,7 +400,7 @@ function createDagger() {
     mainHolder.add(daggerGroup);
     
     const loader = new GLTFLoader();
-    loader.load('/assets/models/Dagger.glb', function(gltf) {
+    loader.load('/models/Dagger.glb', function(gltf) {
         if (handBone) {
             const posHolder = new THREE.Group();
             handBone.add(posHolder);

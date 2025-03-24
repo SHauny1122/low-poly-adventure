@@ -78,7 +78,7 @@ function createTerrain() {
 // Initialize trees with distance culling
 function createTrees(scene, count = TREE_COUNT) { 
     const loader = new GLTFLoader();
-    loader.load('/assets/models/Pine Tree.glb', (gltf) => {
+    loader.load('/models/Pine Tree.glb', (gltf) => {
         const treeModel = gltf.scene;
         
         // Optimize tree model
@@ -125,7 +125,7 @@ function createTrees(scene, count = TREE_COUNT) {
 // Initialize rocks with reduced count
 function createRocks(scene, count = ROCK_COUNT) {
     const loader = new GLTFLoader();
-    loader.load('/assets/models/Rock.glb', (gltf) => {
+    loader.load('/models/Rock.glb', (gltf) => {
         const rockModel = gltf.scene;
         
         for (let i = 0; i < count; i++) {
@@ -163,7 +163,7 @@ function createRocks(scene, count = ROCK_COUNT) {
 function createGrassPatches(scene, count = GRASS_PATCH_COUNT) {
     const loader = new GLTFLoader();
     
-    loader.load('/assets/models/Grass Patch (1).glb', (gltf) => {
+    loader.load('/models/Grass Patch (1).glb', (gltf) => {
         for (let i = 0; i < count; i++) {
             const grassPatch = gltf.scene.clone();
             
@@ -270,7 +270,7 @@ function createChestAndGems(scene) {
     buildings.buildingConfigs.forEach(building => {
         const chestPosition = building.position.clone().add(new THREE.Vector3(0, 0, -30));
         
-        loader.load('src/assets/models/Chest.glb', (gltf) => {
+        loader.load('/models/Chest.glb', (gltf) => {
             const chest = gltf.scene;
             chest.position.copy(chestPosition);
             chest.scale.set(3, 3, 3);
@@ -355,7 +355,7 @@ function spawnGemsAtChest(scene, chest) {
 function createShrubs(scene) {
     const loader = new GLTFLoader();
     
-    loader.load('/assets/models/Shrub.glb', (gltf) => {
+    loader.load('/models/Shrub.glb', (gltf) => {
         for (let i = 0; i < 50; i++) {
             const shrub = gltf.scene.clone();
             
@@ -391,7 +391,7 @@ function createShrubs(scene) {
 function createClouds(scene) {
     const loader = new GLTFLoader();
     
-    loader.load('/assets/models/Clouds.glb', (gltf) => {
+    loader.load('/models/Clouds.glb', (gltf) => {
         for (let i = 0; i < 35; i++) {
             const cloud = gltf.scene.clone();
             
@@ -436,7 +436,7 @@ function createClouds(scene) {
 // Function to spawn gem at enemy death location
 function spawnGemAtLocation(scene, position) {
     const loader = new GLTFLoader();
-    loader.load('src/assets/models/Gem Pink.glb', (gltf) => {
+    loader.load('/models/Gem Pink.glb', (gltf) => {
         const gem = gltf.scene;
         gem.position.copy(position);
         gem.position.y += 0.5; // Lift slightly off ground

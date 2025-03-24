@@ -26,7 +26,7 @@ export class StagManager {
     
     createStag(position) {
         // First load the base model with idle/eating animation
-        this.loader.load('src/assets/models/Stag.glb', (gltf) => {
+        this.loader.load('/models/Stag.glb', (gltf) => {
             const stag = gltf.scene;
             stag.position.copy(position);
             stag.scale.set(1, 1, 1);
@@ -52,23 +52,27 @@ export class StagManager {
             animations.eat.setLoop(THREE.LoopRepeat);
             
             // Load walk animation from second file
-            this.loader.load('src/assets/models/Stag (2).glb', (walkGltf) => {
+            this.loader.load('/models/Stag (2).glb', (walkGltf) => {
                 animations.walk = mixer.clipAction(walkGltf.animations[0]);
                 animations.walk.setLoop(THREE.LoopRepeat);
                 
+                // Store stag info with random initial state and timing
+                const initialState = Math.random() < 0.8 ? 'eating' : 'walking'; // 80% chance of eating
+                const randomDelay = Math.random() * 10000; // Random delay 0-10 seconds
+                
+                this.stags.push({
+                    model: stag,
+                    animations: animations,
+                    state: initialState,
+                    nextStateChange: Date.now() + randomDelay,
+                    originalPosition: position.clone(),
+                    targetPosition: null,
+                    moveSpeed: 1.5 + Math.random(), // Random speed between 1.5 and 2.5
+                    stateDuration: 8000 + Math.random() * 4000 // Random duration 8-12 seconds
+                });
+                
                 // Start behavior cycle
                 this.startBehaviorCycle(stag, animations);
-            });
-            
-            // Store stag info
-            this.stags.push({
-                model: stag,
-                animations: animations,
-                state: 'eating',
-                nextStateChange: Date.now() + 10000, // 10 seconds
-                originalPosition: position.clone(),
-                targetPosition: null,
-                moveSpeed: 2 // units per second
             });
             
             this.scene.add(stag);
@@ -115,8 +119,8 @@ export class StagManager {
             stagInfo.model.rotation.y = Math.atan2(direction.x, direction.z);
         }
         
-        // Schedule next state change in 10 seconds
-        stagInfo.nextStateChange = Date.now() + 10000;
+        // Schedule next state change using stag's individual duration
+        stagInfo.nextStateChange = Date.now() + stagInfo.stateDuration;
     }
     
     update(delta) {

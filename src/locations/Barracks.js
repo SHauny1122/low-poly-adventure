@@ -56,4 +56,18 @@ export class Barracks {
         // Add any barracks-specific update logic here
         // For example, opening doors when player is near
     }
+
+    openChest(chest) {
+        if (chest.userData.isOpen) return;
+        
+        chest.userData.isOpen = true;
+        
+        // Spawn green gem when chest is opened
+        if (window.gemSystem) {
+            window.gemSystem.createGem(chest.position.clone(), 'green');
+            console.log('Created green gem from chest');
+        } else {
+            console.warn('GemSystem not found - no gem created');
+        }
+    }
 }

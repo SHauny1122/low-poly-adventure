@@ -20,7 +20,7 @@ export class Enemy {
         
         // Load base model first
         const loader = new GLTFLoader();
-        loader.load('src/assets/models/Skeleton.glb', (gltf) => {
+        loader.load('/models/Skeleton.glb', (gltf) => {
             this.model = gltf.scene;
             this.mixer = new THREE.AnimationMixer(this.model);
             
@@ -49,7 +49,7 @@ export class Enemy {
 
     loadAnimations(loader) {
         // Load idle animation from base model
-        loader.load('src/assets/models/Skeleton.glb', (gltf) => {
+        loader.load('/models/Skeleton.glb', (gltf) => {
             if (gltf.animations.length > 0) {
                 this.animations.idle = this.mixer.clipAction(gltf.animations[0]);
                 this.animations.idle.play();
@@ -57,19 +57,19 @@ export class Enemy {
             }
             
             // Load run animation
-            loader.load('src/assets/models/Skeleton run.glb', (gltf) => {
+            loader.load('/models/Skeleton run.glb', (gltf) => {
                 if (gltf.animations.length > 0) {
                     this.animations.run = this.mixer.clipAction(gltf.animations[0]);
                     console.log('Run animation loaded');
                     
                     // Load fight animation
-                    loader.load('src/assets/models/Skeleton fight.glb', (gltf) => {
+                    loader.load('/models/Skeleton fight.glb', (gltf) => {
                         if (gltf.animations.length > 0) {
-                            this.animations.fight = this.mixer.clipAction(gltf.animations[0]);
+                            this.animations.attack = this.mixer.clipAction(gltf.animations[0]);
                             console.log('Fight animation loaded');
                             
                             // Load our new death animation
-                            loader.load('src/assets/models/Skeleton (2).glb', (gltf) => {
+                            loader.load('/models/Skeleton (2).glb', (gltf) => {
                                 if (gltf.animations.length > 0) {
                                     // Find the death animation clip
                                     const deathClip = gltf.animations.find(clip => 
@@ -105,9 +105,9 @@ export class Enemy {
         
         // Update state based on distance
         if (distance <= this.attackRange) {
-            if (this.state !== 'fight') {
-                console.log('Enemy switching to FIGHT');
-                this.setState('fight');
+            if (this.state !== 'attack') {
+                console.log('Enemy switching to ATTACK');
+                this.setState('attack');
             }
         } else if (distance <= this.detectionRange) {
             if (this.state !== 'run') {

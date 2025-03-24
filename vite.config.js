@@ -1,22 +1,20 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+  base: './',
   build: {
-    outDir: 'dist',
     assetsDir: 'assets',
     rollupOptions: {
-      input: {
-        main: 'index.html'
+      output: {
+        assetFileNames: 'assets/[name].[ext]'
       }
     }
   },
+  publicDir: 'public',
   resolve: {
     alias: {
-      '@': '/src'
+      '@': '/src',
+      '@assets': '/src/assets'
     }
-  },
-  server: {
-    port: 3000,
-    open: true
   }
 });
