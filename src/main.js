@@ -665,10 +665,16 @@ function checkCollisions() {
     if (!character) return;
     
     const charPos = character.position;
+    console.log("Checking collisions. Character position:", charPos);
+    
+    // Create an array of gems to remove after the loop
+    const gemsToRemove = [];
+    
     scene.children.forEach((child) => {
         if (child.userData && child.userData.isGem) {
             const gemPos = child.position;
             const distance = charPos.distanceTo(gemPos);
+            console.log(`Found gem at ${gemPos.x}, ${gemPos.y}, ${gemPos.z}. Distance: ${distance}. Type: ${child.userData.type}`);
             
             if (distance < 2) {  // If character is close enough
                 // Add to inventory
@@ -676,9 +682,21 @@ function checkCollisions() {
                 console.log(`Collecting ${gemType} gem with userData:`, child.userData);
                 inventorySystem.addGems(gemType, 1);
                 
-                // Remove gem from scene
-                scene.remove(child);
+                // Add to removal array instead of removing immediately
+                gemsToRemove.push(child);
                 console.log(`Current gem counts - Green: ${inventorySystem.gems.green}, Pink: ${inventorySystem.gems.pink}`);
+            }
+        }
+    });
+    
+    // Remove gems after the loop
+    gemsToRemove.forEach(gem => {
+        scene.remove(gem);
+        // Also remove from window.gems array if it exists there
+        if (window.gems) {
+            const index = window.gems.indexOf(gem);
+            if (index > -1) {
+                window.gems.splice(index, 1);
             }
         }
     });
