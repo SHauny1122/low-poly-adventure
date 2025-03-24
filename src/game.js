@@ -235,15 +235,27 @@ function createGrassPatches(scene, count = GRASS_PATCH_COUNT) {
 // Initialize enemies
 let enemyManager;
 
-export function createEnemies(scene) {
+export function createEnemies(scene, buildings) {
     // Create enemy manager and make it globally accessible
-    enemyManager = new EnemyManager(scene);
+    enemyManager = new EnemyManager(scene, buildings);
     window.enemyManager = enemyManager;
     
-    // Add one test enemy at the Barracks, slightly offset for visibility
-    const barracksPosition = new THREE.Vector3(60, 0, -90);
-    enemyManager.createEnemy(barracksPosition);
-    console.log('Creating enemy at:', barracksPosition);
+    // Create one enemy near each building
+    buildings.buildingConfigs.forEach(building => {
+        // Always spawn enemies 35 units north of buildings
+        const spawnPosition = building.position.clone().add(new THREE.Vector3(0, 0, -35));
+        
+        // Try to spawn the enemy
+        const enemy = enemyManager.createEnemy(spawnPosition);
+        if (enemy) {
+            console.log(`Spawned enemy near ${building.name} at fixed position:`, 
+                Math.round(spawnPosition.x), 
+                Math.round(spawnPosition.z)
+            );
+        }
+    });
+    
+    return enemyManager;
 }
 
 // Initialize chest and gems
@@ -442,13 +454,15 @@ window.addEventListener('sceneReady', (e) => {
     createClouds(scene);
     createChestAndGems(scene);
     
-    // Create enemies
-    createEnemies(scene);
-    
-    // Create buildings and locations
-    new Buildings(scene, scene);
-    
+    // Create buildings and locations first
+    const buildings = new Buildings(scene, scene);
     locationManager = new LocationManager(scene, scene);
+    
+    // Then create enemies after buildings are loaded
+    setTimeout(() => {
+        createEnemies(scene, buildings);
+        console.log('Creating enemies near buildings...');
+    }, 2000); // Wait 2 seconds for buildings to load
 });
 
 // Update game state with culling

@@ -1,12 +1,20 @@
 import { Enemy } from './Enemy.js';
 
 export class EnemyManager {
-    constructor(scene) {
+    constructor(scene, buildings) {
         this.scene = scene;
         this.enemies = [];
+        this.buildings = buildings;  // Store reference to buildings
     }
 
     createEnemy(position) {
+        // Check if position is safe before spawning
+        if (this.buildings && !this.buildings.isPositionSafeForSpawning(position)) {
+            console.log('Cannot spawn enemy - too close to buildings');
+            return null;
+        }
+        
+        console.log('Spawning enemy at:', Math.round(position.x), Math.round(position.z));
         const enemy = new Enemy(this.scene, position);
         this.enemies.push(enemy);
         return enemy;

@@ -14,28 +14,32 @@ export class Buildings {
                 path: '/assets/buildings/Barracks.glb',
                 position: new THREE.Vector3(50, 0, -100),
                 scale: 8,
-                markerColor: 0xf4a460
+                markerColor: 0xf4a460,
+                safeDistance: 25  // No spawning within 25 units
             },
             {
                 name: 'Farm',
                 path: '/assets/models/Farm.glb',
                 position: new THREE.Vector3(-150, 0, 100),  // Northeast
                 scale: 8,  // Matched to barracks
-                markerColor: 0x90EE90  // Light green
+                markerColor: 0x90EE90,  // Light green
+                safeDistance: 25  // No spawning within 25 units
             },
             {
                 name: 'Sawmill',
                 path: '/assets/models/Fantasy Sawmill.glb',
                 position: new THREE.Vector3(200, 0, 150),   // Southeast
                 scale: 8,  // Matched to barracks
-                markerColor: 0x8B4513  // Saddle brown
+                markerColor: 0x8B4513,  // Saddle brown
+                safeDistance: 25  // No spawning within 25 units
             },
             {
                 name: 'Houses',
                 path: '/assets/models/Houses.glb',
                 position: new THREE.Vector3(-100, 0, -200), // Northwest
                 scale: 8,  // Matched to barracks
-                markerColor: 0xDEB887  // Burlywood
+                markerColor: 0xDEB887,  // Burlywood
+                safeDistance: 25  // No spawning within 25 units
             }
         ];
         
@@ -128,5 +132,17 @@ export class Buildings {
         });
         
         return nearest;
+    }
+
+    isPositionSafeForSpawning(position) {
+        // Check distance from each building
+        for (const config of this.buildingConfigs) {
+            const distance = position.distanceTo(config.position);
+            if (distance < config.safeDistance) {
+                console.log(`Can't spawn at ${position.x},${position.z} - too close to ${config.name}`);
+                return false;  // Too close to a building
+            }
+        }
+        return true;  // Safe to spawn here
     }
 }
