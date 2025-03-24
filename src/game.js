@@ -312,14 +312,26 @@ function createChestAndGems(scene) {
 
 // Helper function to spawn gems at a chest
 function spawnGemsAtChest(scene, chest) {
-    console.log('Spawning green gems at chest');
+    console.log('=== SPAWNING GREEN GEMS ===');
+    console.log('Chest position:', chest.position);
     const gemCount = 3;
-    const radius = 1; // Reduced from 2 to keep gems closer
+    const radius = 0.5; // Small radius
+    
+    // Find the nearest enemy position
+    const nearestEnemy = window.enemies.find(enemy => {
+        if (!enemy.mesh) return false;
+        const distance = enemy.mesh.position.distanceTo(chest.position);
+        return distance < 40 && enemy.state === 'dead';
+    });
+    
+    // Use enemy position if available, otherwise use chest position
+    const spawnPosition = nearestEnemy ? nearestEnemy.mesh.position : chest.position;
+    console.log('Spawning gems at:', spawnPosition);
     
     for (let i = 0; i < gemCount; i++) {
         const angle = (i / gemCount) * Math.PI * 2;
-        const x = chest.position.x + Math.cos(angle) * radius;
-        const z = chest.position.z + Math.sin(angle) * radius;
+        const x = spawnPosition.x + Math.cos(angle) * radius;
+        const z = spawnPosition.z + Math.sin(angle) * radius;
         
         // Create gem geometry
         const gemGeometry = new THREE.OctahedronGeometry(0.5);
@@ -331,7 +343,7 @@ function spawnGemsAtChest(scene, chest) {
         });
         
         const gem = new THREE.Mesh(gemGeometry, gemMaterial);
-        gem.position.set(x, chest.position.y + 0.5, z); // Lowered from +1 to +0.5 to make it easier to reach
+        gem.position.set(x, spawnPosition.y + 0.5, z); // Keep them low
         
         // Add gem properties for collection
         gem.userData = {
@@ -342,7 +354,7 @@ function spawnGemsAtChest(scene, chest) {
             floatSpeed: 0.5 + Math.random() * 0.5,
             startTime: Math.random() * Math.PI * 2
         };
-        console.log('Created green gem with userData:', gem.userData);
+        console.log(`Spawned green gem at (${x}, ${gem.position.y}, ${z})`);
         
         // Enable shadows
         gem.castShadow = true;
@@ -351,6 +363,7 @@ function spawnGemsAtChest(scene, chest) {
         scene.add(gem);
         window.gems.push(gem);
     }
+    console.log('=== FINISHED SPAWNING ===');
 }
 
 // Initialize shrubs
@@ -436,34 +449,59 @@ function createClouds(scene) {
 }
 
 // Function to spawn gem at enemy death location
-function spawnGemAtLocation(scene, position) {
+function spawnGemAtLocation(scene, position, type = 'pink') {
     const loader = new GLTFLoader();
-    loader.load('/models/Gem Pink.glb', (gltf) => {
+    const gemPath = '/models/Gem.glb';
+    
+    loader.load(gemPath, (gltf) => {
         const gem = gltf.scene;
-        gem.position.copy(position);
-        gem.position.y += 0.5; // Lift slightly off ground
-        gem.scale.set(3, 3, 3);
         
-        // Add floating animation data
-        gem.userData = {
-            startY: gem.position.y,
-            floatHeight: 0.3,
-            floatSpeed: 1.0,
-            startTime: Math.random() * Math.PI * 2,
-            isDroppedGem: true
-        };
+        // If it's a green gem, calculate offset position
+        let finalPosition = position.clone();
+        if (type === 'green') {
+            // Calculate spread based on gem index (stored in userData)
+            const gemIndex = window.gemIndex || 0;
+            window.gemIndex = (gemIndex + 1) % 3;
+            
+            // Create a small triangle formation
+            const radius = 0.5;
+            const angle = (gemIndex / 3) * Math.PI * 2;
+            finalPosition.x += Math.cos(angle) * radius;
+            finalPosition.z += Math.sin(angle) * radius;
+        }
         
-        // Enable shadows
+        gem.position.copy(finalPosition);
+        gem.scale.set(0.3, 0.3, 0.3);
+        
+        // Set color based on type
+        const gemMaterial = new THREE.MeshPhongMaterial({
+            color: type === 'pink' ? 0xff69b4 : 0x00ff00,
+            shininess: 100,
+            emissive: type === 'pink' ? 0xff69b4 : 0x00ff00,
+            emissiveIntensity: 0.2
+        });
+        
         gem.traverse((child) => {
             if (child.isMesh) {
+                child.material = gemMaterial;
                 child.castShadow = true;
                 child.receiveShadow = true;
             }
         });
         
+        // Add gem properties
+        gem.userData = {
+            type: type,
+            isGem: true,
+            startY: gem.position.y,
+            floatHeight: 0.2,
+            floatSpeed: 0.5 + Math.random() * 0.5,
+            startTime: Math.random() * Math.PI * 2
+        };
+        
         scene.add(gem);
         droppedGems.push(gem);
-        console.log('Spawned pink gem at:', position.x, position.z);
+        console.log(`Spawned ${type} gem at:`, finalPosition.x, finalPosition.z);
     });
 }
 

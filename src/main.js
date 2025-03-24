@@ -520,19 +520,130 @@ window.addEventListener('resize', updateMinimapSize);
 
 // Update minimap in render loop
 function updateMinimap() {
-    if (character) {
-        // Update player marker position
+    if (!character || !minimapCamera) return;
+    
+    // Update minimap camera position
+    minimapCamera.position.set(
+        character.position.x,
+        100,
+        character.position.z
+    );
+    
+    // Update player marker
+    if (playerMarker) {
         playerMarker.position.x = character.position.x;
         playerMarker.position.z = character.position.z;
         playerMarker.rotation.y = -character.rotation.y + Math.PI/2;
-        
-        // Update camera to follow player
-        minimapCamera.position.x = character.position.x;
-        minimapCamera.position.z = character.position.z;
-        
-        // Render minimap with all markers
-        minimapRenderer.render(minimapScene, minimapCamera);
     }
+    
+    // Get minimap boundaries
+    const minimapContainer = document.getElementById('minimapContainer');
+    if (!minimapContainer) return;
+    
+    const minimapRect = minimapContainer.getBoundingClientRect();
+    const minimapCenterX = minimapRect.left + minimapRect.width / 2;
+    const minimapCenterY = minimapRect.top + minimapRect.height / 2;
+    const minimapRadius = minimapRect.width / 2;
+    
+    // Update enemy markers and indicators
+    if (window.enemies) {
+        window.enemies.forEach((enemy, index) => {
+            if (!enemy?.mesh || !enemyMinimapMarkers[index] || !enemyIndicators[index]) return;
+            
+            // Update minimap marker position
+            const marker = enemyMinimapMarkers[index];
+            marker.position.x = enemy.mesh.position.x;
+            marker.position.z = enemy.mesh.position.z;
+            
+            // Update marker color based on enemy state
+            const material = marker.material;
+            if (enemy.state === 'dead') {
+                material.color.setHex(0x666666); // Grey for dead enemies
+            } else {
+                material.color.setHex(0xff0000); // Red for active enemies
+            }
+            
+            // Calculate enemy position relative to player
+            const relativeX = enemy.mesh.position.x - character.position.x;
+            const relativeZ = enemy.mesh.position.z - character.position.z;
+            
+            // Calculate angle and distance
+            const angle = Math.atan2(relativeZ, relativeX);
+            const distance = Math.sqrt(relativeX * relativeX + relativeZ * relativeZ);
+            
+            // Check if enemy is within minimap view (100 units radius - increased from 50)
+            const minimapRange = 100;
+            if (distance <= minimapRange) {
+                // Enemy is in minimap view - show marker, hide indicator
+                marker.visible = true;
+                enemyIndicators[index].style.display = 'none';
+            } else {
+                // Enemy is off-screen - hide marker, show indicator
+                marker.visible = false;
+                
+                // Calculate indicator position on minimap edge
+                const indicatorDistance = minimapRadius * 0.9; // Slightly inside the edge
+                const indicatorX = minimapCenterX + Math.cos(angle) * indicatorDistance;
+                const indicatorY = minimapCenterY + Math.sin(angle) * indicatorDistance;
+                
+                const indicator = enemyIndicators[index];
+                indicator.style.display = 'block';
+                indicator.style.left = indicatorX + 'px';
+                indicator.style.top = indicatorY + 'px';
+                
+                // Add distance text
+                const distanceInUnits = Math.round(distance);
+                indicator.innerHTML = `❌<br>${distanceInUnits}m`;
+                
+                // Make indicator more visible
+                indicator.style.color = '#ff3333';
+                indicator.style.fontSize = '20px';
+                indicator.style.textShadow = '2px 2px 4px black';
+                indicator.style.transform = 'translate(-50%, -50%)';
+            }
+        });
+    }
+    
+    // Render final minimap
+    minimapRenderer.render(minimapScene, minimapCamera);
+}
+
+// Initialize arrays for enemies and markers
+window.enemies = [];
+const enemyMinimapMarkers = [];
+const enemyIndicators = [];
+
+// Add enemy markers to minimap
+function createEnemyMinimapMarker(enemy) {
+    const markerGeometry = new THREE.BoxGeometry(3, 3, 3);
+    const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Changed from MeshStandardMaterial
+    const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+    marker.position.y = 50; // Keep above other minimap elements
+    minimapScene.add(marker);
+    return marker;
+}
+
+// Create edge indicator with better visibility
+function createEdgeIndicator() {
+    const indicator = document.createElement('div');
+    indicator.className = 'minimap-edge-indicator';
+    indicator.style.position = 'absolute';
+    indicator.style.display = 'none';
+    indicator.style.color = '#ff3333';
+    indicator.style.fontSize = '20px';
+    indicator.style.fontWeight = 'bold';
+    indicator.style.textShadow = '2px 2px 4px black';
+    indicator.style.pointerEvents = 'none';
+    indicator.style.textAlign = 'center';
+    indicator.style.zIndex = '1000';
+    document.getElementById('minimapContainer').appendChild(indicator);
+    return indicator;
+}
+
+// Create initial indicators (will be populated when enemies spawn)
+for (let i = 0; i < 4; i++) {
+    enemyIndicators.push(createEdgeIndicator());
+    enemyMinimapMarkers.push(createEnemyMinimapMarker());
 }
 
 // Add attack button for mobile
@@ -638,10 +749,24 @@ function createGem(position, type = 'green') {
     const material = new THREE.MeshStandardMaterial({ 
         color: type === 'green' ? 0x00ff00 : 0xff69b4,
         metalness: 0.7,
-        roughness: 0.2
+        roughness: 0.2,
+        emissive: type === 'green' ? 0x00ff00 : 0xff69b4,
+        emissiveIntensity: 0.2
     });
     const gem = new THREE.Mesh(geometry, material);
-    gem.position.copy(position);
+    
+    // For green gems, create a triangle formation
+    let finalPosition = position.clone();
+    if (type === 'green') {
+        const gemIndex = window.gemIndex || 0;
+        const radius = 1; // Spread them out a bit more
+        const angle = (gemIndex / 3) * Math.PI * 2;
+        finalPosition.x += Math.cos(angle) * radius;
+        finalPosition.z += Math.sin(angle) * radius;
+        console.log(`Creating green gem ${gemIndex + 1} at offset:`, Math.cos(angle) * radius, Math.sin(angle) * radius);
+    }
+    
+    gem.position.copy(finalPosition);
     gem.position.y = 1;
     gem.userData.type = type;
     gem.userData.isGem = true;
@@ -665,20 +790,38 @@ function checkCollisions() {
     if (!character) return;
     
     const charPos = character.position;
-    console.log("Checking collisions. Character position:", charPos);
     
     // Create an array of gems to remove after the loop
     const gemsToRemove = [];
     
+    // First, find all gems and log their distances
+    const gems = scene.children.filter(child => child.userData && child.userData.isGem);
+    if (gems.length > 0) {
+        console.log('=== Found Gems ===');
+        gems.forEach(gem => {
+            const distance = charPos.distanceTo(gem.position);
+            if (gem.userData.type === 'green') {
+                console.log(`GREEN GEM at distance ${distance.toFixed(2)}`);
+            }
+        });
+        console.log('================');
+    }
+    
+    // Then check for collection
     scene.children.forEach((child) => {
         if (child.userData && child.userData.isGem) {
             const gemPos = child.position;
             const distance = charPos.distanceTo(gemPos);
-            console.log(`Found gem at ${gemPos.x}, ${gemPos.y}, ${gemPos.z}. Distance: ${distance}. Type: ${child.userData.type}`);
             
             if (distance < 2) {  // If character is close enough
                 // Add to inventory
                 const gemType = child.userData.type;
+                if (gemType === 'green') {
+                    console.log('!!! COLLECTING GREEN GEM !!!');
+                    console.log('Distance:', distance.toFixed(2));
+                    console.log('Gem position:', gemPos);
+                    console.log('Player position:', charPos);
+                }
                 console.log(`Collecting ${gemType} gem with userData:`, child.userData);
                 inventorySystem.addGems(gemType, 1);
                 

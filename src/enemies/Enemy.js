@@ -178,19 +178,21 @@ export class Enemy {
             this.isDead = true;
             this.setState('death');
             
-            // Drop pink gem
+            // Drop pink and green gems
             if (typeof window.createGem === 'function') {
+                // Reset gem index for new spawn
+                window.gemIndex = 0;
+                
+                // Drop pink gem
                 window.createGem(this.model.position.clone(), 'pink');
                 console.log('Dropped pink gem from enemy');
-            }
-            
-            // Dispatch event for chest gems
-            window.dispatchEvent(new CustomEvent('enemyDied', {
-                detail: {
-                    position: this.model.position.clone(),
-                    enemyType: 'skeleton'
+                
+                // Drop green gems in a triangle formation
+                for (let i = 0; i < 3; i++) {
+                    window.createGem(this.model.position.clone(), 'green');
+                    console.log(`Dropped green gem ${i + 1} from enemy`);
                 }
-            }));
+            }
             
             // Remove from scene after delay
             setTimeout(() => {

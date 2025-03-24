@@ -46,8 +46,17 @@ export class InventorySystem {
     
     addGems(type, amount) {
         console.log(`InventorySystem.addGems called with type: ${type}, amount: ${amount}`);
+        if (type === 'green') {
+            console.log('=== INVENTORY SYSTEM ===');
+            console.log('Adding green gems:', amount);
+            console.log('Current green gems:', this.gems.green);
+        }
+        
         if (this.gems.hasOwnProperty(type)) {
             this.gems[type] += amount;
+            if (type === 'green') {
+                console.log('New green gems total:', this.gems.green);
+            }
             console.log(`Added ${amount} ${type} gems. New total: ${this.gems[type]}`);
             this.updateUI();
         } else {
@@ -58,6 +67,10 @@ export class InventorySystem {
     updateUI() {
         this.greenGemCounter.innerHTML = `💎 Green: ${this.gems.green}`;
         this.pinkGemCounter.innerHTML = `💎 Pink: ${this.gems.pink}`;
+        if (this.gems.green > 0) {
+            console.log('=== UI UPDATED ===');
+            console.log('Green gems in UI:', this.gems.green);
+        }
         console.log('Updated UI - Green:', this.gems.green, 'Pink:', this.gems.pink);
     }
     
