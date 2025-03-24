@@ -55,6 +55,7 @@ export class InventorySystem {
     updateUI() {
         this.greenGemCounter.innerHTML = `💎 Green: ${this.gems.green}`;
         this.pinkGemCounter.innerHTML = `💎 Pink: ${this.gems.pink}`;
+        console.log('Updated UI - Green:', this.gems.green, 'Pink:', this.gems.pink);
     }
     
     getGemCount(type) {

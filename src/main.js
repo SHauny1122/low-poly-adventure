@@ -657,6 +657,9 @@ function createGem(position, type = 'green') {
     return gem;
 }
 
+// Make createGem globally available
+window.createGem = createGem;
+
 // Update gem collection logic in the collision check
 function checkCollisions() {
     if (!character) return;
@@ -669,12 +672,13 @@ function checkCollisions() {
             
             if (distance < 2) {  // If character is close enough
                 // Add to inventory
-                inventorySystem.addGems(child.userData.type, 1);
+                const gemType = child.userData.type;
+                console.log(`Collecting ${gemType} gem`);
+                inventorySystem.addGems(gemType, 1);
                 
                 // Remove gem from scene
                 scene.remove(child);
-                
-                // Play collection sound or effect here if we add one later
+                console.log(`Current gem counts - Green: ${inventorySystem.gems.green}, Pink: ${inventorySystem.gems.pink}`);
             }
         }
     });
@@ -774,25 +778,8 @@ function animate() {
             }
         });
         
-        // Check for gem collection
-        if (character) {
-            const charPos = character.position;
-            scene.children.forEach((child) => {
-                if (child.userData && child.userData.isGem) {
-                    const gemPos = child.position;
-                    const distance = charPos.distanceTo(gemPos);
-                    
-                    if (distance < 2) {  // If character is close enough
-                        // Add to inventory
-                        inventorySystem.addGems(child.userData.type, 1);
-                        
-                        // Remove gem from scene
-                        scene.remove(child);
-                        console.log(`Collected ${child.userData.type} gem`);
-                    }
-                }
-            });
-        }
+        // Check for gem collisions
+        checkCollisions();
         
         // Camera follow logic - always behind character
         const idealOffset = new THREE.Vector3(

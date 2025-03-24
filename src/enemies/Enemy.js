@@ -178,26 +178,19 @@ export class Enemy {
             this.isDead = true;
             this.setState('death');
             
-            // Drop pink gem using global gemSystem
-            if (window.gemSystem) {
-                // Drop pink gem at enemy position
-                window.gemSystem.createGem(this.model.position.clone(), 'pink');
-                
-                // Create 2-3 green gems scattered around
-                const numGreenGems = 2 + Math.floor(Math.random());
-                for (let i = 0; i < numGreenGems; i++) {
-                    const angle = (Math.PI * 2 * i) / numGreenGems;
-                    const radius = 2; // 2 units away from enemy
-                    const position = this.model.position.clone();
-                    position.x += Math.cos(angle) * radius;
-                    position.z += Math.sin(angle) * radius;
-                    window.gemSystem.createGem(position, 'green');
-                }
-                
-                console.log(`Dropped pink gem and ${numGreenGems} green gems from enemy`);
-            } else {
-                console.warn('GemSystem not found - no gems dropped');
+            // Drop pink gem
+            if (typeof window.createGem === 'function') {
+                window.createGem(this.model.position.clone(), 'pink');
+                console.log('Dropped pink gem from enemy');
             }
+            
+            // Dispatch event for chest gems
+            window.dispatchEvent(new CustomEvent('enemyDied', {
+                detail: {
+                    position: this.model.position.clone(),
+                    enemyType: 'skeleton'
+                }
+            }));
             
             // Remove from scene after delay
             setTimeout(() => {

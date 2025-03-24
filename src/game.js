@@ -332,8 +332,10 @@ function spawnGemsAtChest(scene, chest) {
         const gem = new THREE.Mesh(gemGeometry, gemMaterial);
         gem.position.set(x, chest.position.y + 1, z);
         
-        // Add floating animation data
+        // Add gem properties for collection
         gem.userData = {
+            type: 'green',
+            isGem: true,
             startY: gem.position.y,
             floatHeight: 0.2,
             floatSpeed: 0.5 + Math.random() * 0.5,
