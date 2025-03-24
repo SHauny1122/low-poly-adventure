@@ -11,6 +11,7 @@ let enemies = [];
 let gems = [];
 let gemsCollected = 0;
 let clouds = [];
+let droppedGems = [];
 
 // Performance settings
 const SHADOW_MAP_SIZE = 512;  // Further reduced shadows
@@ -261,73 +262,91 @@ export function createEnemies(scene, buildings) {
 // Initialize chest and gems
 function createChestAndGems(scene) {
     const loader = new GLTFLoader();
+    const chests = [];
+    window.gems = []; // Store gems globally
     
-    // Building positions for chest placement
-    const chestLocations = [
-        { x: 60, z: -105 },    // Barracks
-        { x: -160, z: 110 },   // Farm
-        { x: 220, z: 170 },    // Sawmill (moved further out from building)
-        { x: -110, z: -215 }   // Houses (moved further away)
-    ];
-    
-    // Make gems array globally accessible
-    if (!window.gems) {
-        window.gems = [];
-    }
-    
-    chestLocations.forEach(location => {
-        loader.load('/assets/models/Chest.glb', (gltf) => {
+    // Load chest model for each building
+    const buildings = new Buildings(scene, scene);
+    buildings.buildingConfigs.forEach(building => {
+        const chestPosition = building.position.clone().add(new THREE.Vector3(0, 0, -30));
+        
+        loader.load('src/assets/models/Chest.glb', (gltf) => {
             const chest = gltf.scene;
-            chest.position.set(location.x, 0, location.z);
-            chest.scale.set(2, 2, 2);
-            chest.rotation.y = Math.PI / 4;
+            chest.position.copy(chestPosition);
+            chest.scale.set(3, 3, 3);
+            
+            // Store building name with chest for reference
+            chest.userData.buildingName = building.name;
+            chest.userData.hasGems = false; // Track if gems are spawned
+            
+            // Enable shadows
             chest.traverse((child) => {
                 if (child.isMesh) {
                     child.castShadow = true;
                     child.receiveShadow = true;
                 }
             });
-            scene.add(chest);
-
-            // Create gems around each chest
-            const gemCount = 5;  // 5 gems per chest
-            const radius = 2;    // 2 units radius around chest
             
-            for (let i = 0; i < gemCount; i++) {
-                const angle = (i / gemCount) * Math.PI * 2;
-                const gemGeometry = new THREE.OctahedronGeometry(0.5);
-                const gemMaterial = new THREE.MeshPhongMaterial({
-                    color: 0x00ff00,
-                    shininess: 100,
-                    emissive: 0x00ff00,
-                    emissiveIntensity: 0.2
-                });
-                
-                const gem = new THREE.Mesh(gemGeometry, gemMaterial);
-                
-                // Position gems in a circle around the chest
-                gem.position.x = location.x + Math.cos(angle) * radius;
-                gem.position.y = 1;  // Floating 1 unit above ground
-                gem.position.z = location.z + Math.sin(angle) * radius;
-                
-                // Add gentle floating animation
-                const floatSpeed = 0.5 + Math.random() * 0.5;
-                const floatHeight = 0.2 + Math.random() * 0.2;
-                const startY = gem.position.y;
-                const startTime = Math.random() * Math.PI * 2;
-                
-                gem.userData = {
-                    floatSpeed,
-                    floatHeight,
-                    startY,
-                    startTime
-                };
-                
-                window.gems.push(gem);
-                scene.add(gem);
-            }
+            scene.add(chest);
+            chests.push(chest);
         });
     });
+    
+    // Listen for enemy death events
+    window.addEventListener('enemyDied', (event) => {
+        const enemyPosition = event.detail.position;
+        
+        // Find the nearest chest to the dead enemy
+        const nearestChest = chests.find(chest => {
+            const distance = chest.position.distanceTo(enemyPosition);
+            return distance < 40 && !chest.userData.hasGems; // Within 40 units and no gems yet
+        });
+        
+        if (nearestChest) {
+            console.log('Spawning gems at chest near', nearestChest.userData.buildingName);
+            spawnGemsAtChest(scene, nearestChest);
+            nearestChest.userData.hasGems = true;
+        }
+    });
+}
+
+// Helper function to spawn gems at a chest
+function spawnGemsAtChest(scene, chest) {
+    const gemCount = 3;
+    const radius = 2;
+    
+    for (let i = 0; i < gemCount; i++) {
+        const angle = (i / gemCount) * Math.PI * 2;
+        const x = chest.position.x + Math.cos(angle) * radius;
+        const z = chest.position.z + Math.sin(angle) * radius;
+        
+        // Create gem geometry
+        const gemGeometry = new THREE.OctahedronGeometry(0.5);
+        const gemMaterial = new THREE.MeshPhongMaterial({
+            color: 0x00ff00,
+            shininess: 100,
+            emissive: 0x00ff00,
+            emissiveIntensity: 0.2
+        });
+        
+        const gem = new THREE.Mesh(gemGeometry, gemMaterial);
+        gem.position.set(x, chest.position.y + 1, z);
+        
+        // Add floating animation data
+        gem.userData = {
+            startY: gem.position.y,
+            floatHeight: 0.2,
+            floatSpeed: 0.5 + Math.random() * 0.5,
+            startTime: Math.random() * Math.PI * 2
+        };
+        
+        // Enable shadows
+        gem.castShadow = true;
+        gem.receiveShadow = true;
+        
+        scene.add(gem);
+        window.gems.push(gem);
+    }
 }
 
 // Initialize shrubs
@@ -412,6 +431,62 @@ function createClouds(scene) {
     });
 }
 
+// Function to spawn gem at enemy death location
+function spawnGemAtLocation(scene, position) {
+    const loader = new GLTFLoader();
+    loader.load('src/assets/models/Gem Pink.glb', (gltf) => {
+        const gem = gltf.scene;
+        gem.position.copy(position);
+        gem.position.y += 0.5; // Lift slightly off ground
+        gem.scale.set(3, 3, 3);
+        
+        // Add floating animation data
+        gem.userData = {
+            startY: gem.position.y,
+            floatHeight: 0.3,
+            floatSpeed: 1.0,
+            startTime: Math.random() * Math.PI * 2,
+            isDroppedGem: true
+        };
+        
+        // Enable shadows
+        gem.traverse((child) => {
+            if (child.isMesh) {
+                child.castShadow = true;
+                child.receiveShadow = true;
+            }
+        });
+        
+        scene.add(gem);
+        droppedGems.push(gem);
+        console.log('Spawned pink gem at:', position.x, position.z);
+    });
+}
+
+// Add gem collection check to the update loop
+function updateGemCollection(playerPosition) {
+    const collectionRadius = 2; // Collection radius in units
+    
+    for (let i = droppedGems.length - 1; i >= 0; i--) {
+        const gem = droppedGems[i];
+        const distance = playerPosition.distanceTo(gem.position);
+        
+        if (distance < collectionRadius) {
+            console.log('Collected dropped gem!');
+            scene.remove(gem);
+            droppedGems.splice(i, 1);
+            // Here you can add effects, update score, etc.
+        } else {
+            // Update floating animation
+            const time = performance.now() * 0.001;
+            const floatData = gem.userData;
+            gem.position.y = floatData.startY + 
+                Math.sin(time * floatData.floatSpeed + floatData.startTime) * 
+                floatData.floatHeight;
+        }
+    }
+}
+
 // Culling system - hide distant objects
 function updateObjectVisibility(playerPosition) {
     const now = Date.now();
@@ -465,6 +540,11 @@ window.addEventListener('sceneReady', (e) => {
     }, 2000); // Wait 2 seconds for buildings to load
 });
 
+// Listen for enemy death to spawn gems
+window.addEventListener('enemyDied', (event) => {
+    spawnGemAtLocation(scene, event.detail.position);
+});
+
 // Update game state with culling
 window.addEventListener('beforeRender', (e) => {
     const { playerPosition, delta } = e.detail;
@@ -478,6 +558,7 @@ window.addEventListener('beforeRender', (e) => {
     }
     
     updateObjectVisibility(playerPosition);
+    updateGemCollection(playerPosition);
     
     if (locationManager) {
         locationManager.update(playerPosition);

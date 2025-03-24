@@ -187,10 +187,17 @@ export class Enemy {
             console.log('Enemy died, playing death animation');
             this.setState('death');
             
-            // Remove after death animation finishes
+            // Remove after death animation finishes (1 second now)
             setTimeout(() => {
                 this.dispose();
-            }, 5000); // Wait 5 seconds before removing
+                // Dispatch event when enemy dies
+                window.dispatchEvent(new CustomEvent('enemyDied', {
+                    detail: {
+                        position: this.position.clone(),
+                        enemyType: 'skeleton'
+                    }
+                }));
+            }, 1000); // Changed from 5000 to 1000 ms
         }
     }
 
