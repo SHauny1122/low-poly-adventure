@@ -155,7 +155,7 @@ function isTooCloseToBuildings(x, z) {
 // Load and place tree & rock clusters
 function placeTreeRockClusters() {
     const loader = new GLTFLoader();
-    loader.load('/models/Trees %26 Rocks.glb', (gltf) => {
+    loader.load('/models/Trees-and-Rocks.glb', (gltf) => {
         // Create 15 clusters
         for (let i = 0; i < 15; i++) {
             const cluster = gltf.scene.clone();
@@ -180,7 +180,7 @@ function placeTreeRockClusters() {
             scene.add(cluster);
         }
     }, undefined, (error) => {
-        console.error('Error loading Trees & Rocks:', error);
+        console.error('Error loading Trees and Rocks:', error);
     });
 }
 
