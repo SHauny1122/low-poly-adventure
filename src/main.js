@@ -5,12 +5,16 @@ import nipplejs from 'nipplejs';
 import './game.js';
 import { LocationManager } from './locations/LocationManager.js';
 import { StagManager } from './StagManager.js';
+import { InventorySystem } from './inventory/InventorySystem.js';
+import { GemSystem } from './gems/GemSystem.js';
 
 // Game state variables
 let character = null;
 let enemyManager = null;
 let locationManager = null;
 let stagManager = null;
+let inventorySystem = null;
+let gemSystem = null;
 
 // Game constants
 const MOVEMENT_SPEED = 8;  // Slightly slower for more natural movement
@@ -628,11 +632,62 @@ window.addEventListener('resize', () => {
 // Gems
 const gems = window.gems || [];
 
-// No need to load gem model - we're using the octahedron gems from game.js
+// Function to create a gem
+function createGem(position, type = 'green') {
+    const geometry = new THREE.OctahedronGeometry(0.5);
+    const material = new THREE.MeshStandardMaterial({ 
+        color: type === 'green' ? 0x00ff00 : 0xff69b4,
+        metalness: 0.7,
+        roughness: 0.2
+    });
+    const gem = new THREE.Mesh(geometry, material);
+    gem.position.copy(position);
+    gem.position.y = 1;
+    gem.userData.type = type;
+    gem.userData.isGem = true;
+    
+    // Add floating animation
+    const startY = gem.position.y;
+    gem.userData.update = (delta) => {
+        gem.position.y = startY + Math.sin(Date.now() * 0.003) * 0.3;
+        gem.rotation.y += delta * 2;
+    };
+    
+    scene.add(gem);
+    return gem;
+}
+
+// Update gem collection logic in the collision check
+function checkCollisions() {
+    if (!character) return;
+    
+    const charPos = character.position;
+    scene.children.forEach((child) => {
+        if (child.userData && child.userData.isGem) {
+            const gemPos = child.position;
+            const distance = charPos.distanceTo(gemPos);
+            
+            if (distance < 2) {  // If character is close enough
+                // Add to inventory
+                inventorySystem.addGems(child.userData.type, 1);
+                
+                // Remove gem from scene
+                scene.remove(child);
+                
+                // Play collection sound or effect here if we add one later
+            }
+        }
+    });
+}
 
 // Initialize game objects
 // Initialize game world
 function initializeWorld() {
+    // Create inventory and gem systems
+    inventorySystem = new InventorySystem();
+    gemSystem = new GemSystem(scene);
+    window.gemSystem = gemSystem; // Make it globally accessible
+    
     // Create stags
     stagManager = new StagManager(scene);
     
@@ -711,6 +766,33 @@ function animate() {
         
         // Update enemies
         if (enemyManager) enemyManager.update(delta);
+        
+        // Update gems
+        scene.children.forEach((child) => {
+            if (child.userData && child.userData.update) {
+                child.userData.update(delta);
+            }
+        });
+        
+        // Check for gem collection
+        if (character) {
+            const charPos = character.position;
+            scene.children.forEach((child) => {
+                if (child.userData && child.userData.isGem) {
+                    const gemPos = child.position;
+                    const distance = charPos.distanceTo(gemPos);
+                    
+                    if (distance < 2) {  // If character is close enough
+                        // Add to inventory
+                        inventorySystem.addGems(child.userData.type, 1);
+                        
+                        // Remove gem from scene
+                        scene.remove(child);
+                        console.log(`Collected ${child.userData.type} gem`);
+                    }
+                }
+            });
+        }
         
         // Camera follow logic - always behind character
         const idealOffset = new THREE.Vector3(

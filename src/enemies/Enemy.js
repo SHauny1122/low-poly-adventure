@@ -15,13 +15,22 @@ export class Enemy {
         this.moveSpeed = 0.3;
         this.collisionRadius = 2;
         this.isAnimationLoading = true;
+        this.deathAnimationLoaded = false;
+        this.isDead = false;
         
         // Load base model first
         const loader = new GLTFLoader();
         loader.load('src/assets/models/Skeleton.glb', (gltf) => {
             this.model = gltf.scene;
+            this.mixer = new THREE.AnimationMixer(this.model);
+            
+            // Store all animations
+            gltf.animations.forEach((clip) => {
+                this.animations[clip.name] = this.mixer.clipAction(clip);
+            });
+            
             this.model.position.copy(this.position);
-            this.model.scale.set(2, 2, 2);
+            this.model.scale.set(3, 3, 3);
             
             // Enable shadows
             this.model.traverse((child) => {
@@ -32,11 +41,8 @@ export class Enemy {
             });
             
             this.scene.add(this.model);
+            this.isAnimationLoading = false;
             
-            // Setup animation mixer
-            this.mixer = new THREE.AnimationMixer(this.model);
-            
-            // Load all animations
             this.loadAnimations(loader);
         });
     }
@@ -62,34 +68,21 @@ export class Enemy {
                             this.animations.fight = this.mixer.clipAction(gltf.animations[0]);
                             console.log('Fight animation loaded');
                             
-                            // Load death animation separately to ensure it's loaded correctly
-                            loader.load('src/assets/models/Skeleton dead.glb', (gltf) => {
-                                console.log('Death GLB loaded:', gltf);
+                            // Load our new death animation
+                            loader.load('src/assets/models/Skeleton (2).glb', (gltf) => {
                                 if (gltf.animations.length > 0) {
-                                    // Create death animation and configure it
-                                    const deathClip = gltf.animations[0];
-                                    console.log('Death animation clip:', deathClip);
-                                    console.log('Death animation duration:', deathClip.duration);
-                                    console.log('Death animation name:', deathClip.name);
+                                    // Find the death animation clip
+                                    const deathClip = gltf.animations.find(clip => 
+                                        clip.name.toLowerCase().includes('death'));
                                     
-                                    this.animations.death = this.mixer.clipAction(deathClip);
-                                    
-                                    // Set up death animation properties
-                                    this.animations.death.setLoop(THREE.LoopOnce);
-                                    this.animations.death.clampWhenFinished = true;
-                                    
-                                    console.log('Death animation loaded and configured');
-                                    this.isAnimationLoading = false;
-                                } else {
-                                    console.error('No animations found in death model!');
+                                    if (deathClip) {
+                                        this.animations.death = this.mixer.clipAction(deathClip);
+                                        this.animations.death.setLoop(THREE.LoopOnce);
+                                        this.animations.death.clampWhenFinished = true;
+                                        console.log('New death animation loaded successfully');
+                                    }
                                 }
-                            }, 
-                            // Add error handler for death animation
-                            (xhr) => {
-                                console.log('Death animation loading: ' + (xhr.loaded / xhr.total * 100) + '%');
-                            },
-                            (error) => {
-                                console.error('Error loading death animation:', error);
+                                this.isAnimationLoading = false;
                             });
                         }
                     });
@@ -178,26 +171,40 @@ export class Enemy {
     }
 
     takeDamage() {
-        if (this.state === 'dead') return;
-        
         this.health--;
-        console.log('Enemy hit! Health:', this.health);
+        console.log('Enemy took damage! Health:', this.health);
         
-        if (this.health <= 0) {
-            console.log('Enemy died, playing death animation');
+        if (this.health <= 0 && !this.isDead) {
+            this.isDead = true;
             this.setState('death');
             
-            // Remove after death animation finishes (1 second now)
+            // Drop pink gem using global gemSystem
+            if (window.gemSystem) {
+                // Drop pink gem at enemy position
+                window.gemSystem.createGem(this.model.position.clone(), 'pink');
+                
+                // Create 2-3 green gems scattered around
+                const numGreenGems = 2 + Math.floor(Math.random());
+                for (let i = 0; i < numGreenGems; i++) {
+                    const angle = (Math.PI * 2 * i) / numGreenGems;
+                    const radius = 2; // 2 units away from enemy
+                    const position = this.model.position.clone();
+                    position.x += Math.cos(angle) * radius;
+                    position.z += Math.sin(angle) * radius;
+                    window.gemSystem.createGem(position, 'green');
+                }
+                
+                console.log(`Dropped pink gem and ${numGreenGems} green gems from enemy`);
+            } else {
+                console.warn('GemSystem not found - no gems dropped');
+            }
+            
+            // Remove from scene after delay
             setTimeout(() => {
-                this.dispose();
-                // Dispatch event when enemy dies
-                window.dispatchEvent(new CustomEvent('enemyDied', {
-                    detail: {
-                        position: this.position.clone(),
-                        enemyType: 'skeleton'
-                    }
-                }));
-            }, 1000); // Changed from 5000 to 1000 ms
+                if (this.model && this.model.parent) {
+                    this.model.parent.remove(this.model);
+                }
+            }, 1000);
         }
     }
 
