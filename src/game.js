@@ -458,7 +458,7 @@ function createPaths(scene) {
         { x: -100, z: -200 }     // Houses
     ];
 
-    loader.load('/public/models/Path (1).glb', (gltf) => {
+    loader.load('/models/Path (1).glb', (gltf) => {
         const pathModel = gltf.scene;
         
         // Create paths between consecutive buildings (including last to first)
