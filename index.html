@@ -2,7 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#2E7D32">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Adventure">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <title>Low Poly Adventure</title>
     <style>
         body { 
@@ -23,8 +29,8 @@
             position: fixed;
             top: 20px;
             right: 20px;
-            width: 200px;
-            height: 200px;
+            width: 150px;
+            height: 150px;
             border-radius: 10px;
             overflow: hidden;
             z-index: 1000;
@@ -38,8 +44,8 @@
         }
         #minimapLegend {
             position: fixed;
-            top: 230px;
-            right: 20px;
+            top: 20px;
+            left: 20px;
             background: rgba(0, 0, 0, 0.7);
             padding: 10px;
             border-radius: 5px;
@@ -69,23 +75,66 @@
             line-height: 20px;
             z-index: 1000;
         }
-        @media (max-width: 768px) {
+
+        /* Mobile landscape orientation styles */
+        @media screen and (orientation: landscape) {
             #minimapContainer {
-                width: 120px;
-                height: 120px;
                 top: 10px;
                 right: 10px;
+                width: 120px;
+                height: 120px;
             }
             #minimapLegend {
-                top: 140px;
-                right: 10px;
+                top: unset;
+                bottom: 10px;
+                left: 10px;
                 font-size: 10px;
                 padding: 5px;
+                display: flex;
+                flex-wrap: wrap;
+                max-width: 300px;
+                gap: 5px;
+            }
+            #minimapLegend div {
+                margin: 2px;
+                white-space: nowrap;
+                flex: 0 1 auto;
             }
             .legendColor {
                 width: 8px;
                 height: 8px;
                 margin-right: 4px;
+            }
+            /* Adjust game controls for landscape */
+            #joystickWrapper {
+                position: fixed;
+                left: 50px;
+                bottom: 50px;
+            }
+            #actionButtons {
+                position: fixed;
+                right: 50px;
+                bottom: 50px;
+                display: flex;
+                gap: 20px;
+            }
+            #sprintButton, #attackButton {
+                width: 60px;
+                height: 60px;
+                margin: 5px;
+                opacity: 0.8;
+            }
+        }
+
+        /* Portrait mode adjustments */
+        @media screen and (orientation: portrait) {
+            #minimapContainer {
+                width: 100px;
+                height: 100px;
+            }
+            #minimapLegend {
+                right: 10px;
+                top: 130px;
             }
         }
     </style>
@@ -102,6 +151,11 @@
         <div><span class="legendColor" style="background: #654321;"></span>Sawmill</div>
         <div><span class="legendColor" style="background: #DEB887;"></span>Houses</div>
         <div><span class="legendColor" style="background: #FFD700;"></span>Chest</div>
+    </div>
+    <div id="joystickWrapper"></div>
+    <div id="actionButtons">
+        <div id="sprintButton"></div>
+        <div id="attackButton"></div>
     </div>
 </body>
 </html>
