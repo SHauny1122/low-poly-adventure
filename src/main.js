@@ -152,6 +152,51 @@ function isTooCloseToBuildings(x, z) {
     });
 }
 
+// Function to check if a point is too close to paths
+function isTooCloseToPath(x, z) {
+    const buildingPositions = [
+        { x: 50, z: -100 },    // Barracks
+        { x: -150, z: 100 },   // Farm
+        { x: 200, z: 150 },    // Sawmill
+        { x: -100, z: -200 }   // Houses
+    ];
+    
+    const minDistanceFromPath = 15; // Minimum distance from path center
+    
+    // Check each path segment between buildings
+    for (let i = 0; i < buildingPositions.length; i++) {
+        const start = buildingPositions[i];
+        const end = buildingPositions[(i + 1) % buildingPositions.length];
+        
+        // Calculate closest point on line segment to the test point
+        const pathVectorX = end.x - start.x;
+        const pathVectorZ = end.z - start.z;
+        const pathLength = Math.sqrt(pathVectorX * pathVectorX + pathVectorZ * pathVectorZ);
+        
+        // Vector from start to test point
+        const pointVectorX = x - start.x;
+        const pointVectorZ = z - start.z;
+        
+        // Calculate projection
+        const dot = (pointVectorX * pathVectorX + pointVectorZ * pathVectorZ) / pathLength;
+        const projection = Math.max(0, Math.min(pathLength, dot));
+        
+        // Calculate closest point on path
+        const closestX = start.x + (projection * pathVectorX) / pathLength;
+        const closestZ = start.z + (projection * pathVectorZ) / pathLength;
+        
+        // Calculate distance to closest point
+        const dx = x - closestX;
+        const dz = z - closestZ;
+        const distance = Math.sqrt(dx * dx + dz * dz);
+        
+        if (distance < minDistanceFromPath) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // Load and place tree & rock clusters
 function placeTreeRockClusters() {
     const loader = new GLTFLoader();
@@ -162,22 +207,28 @@ function placeTreeRockClusters() {
             
             // Keep trying until we find a valid position
             let x, z;
+            let validPosition = false;
+            let attempts = 0;
             do {
                 x = Math.random() * 400 - 200;  // -200 to 200
                 z = Math.random() * 400 - 200;  // -200 to 200
-            } while (isTooCloseToBuildings(x, z));
+                validPosition = !isTooCloseToBuildings(x, z) && !isTooCloseToPath(x, z);
+                attempts++;
+            } while (!validPosition && attempts < 50);
             
-            cluster.position.set(x, 0, z);
-            
-            // Random rotation
-            cluster.rotation.y = Math.random() * Math.PI * 2;
-            
-            // Random scale (0.9 to 1.1 of original size)
-            const scale = 0.8 + Math.random() * 0.4;
-            cluster.scale.set(scale, scale, scale);
-            
-            // Add to scene
-            scene.add(cluster);
+            if (validPosition) {
+                cluster.position.set(x, 0, z);
+                
+                // Random rotation
+                cluster.rotation.y = Math.random() * Math.PI * 2;
+                
+                // Random scale (0.9 to 1.1 of original size)
+                const scale = 0.8 + Math.random() * 0.4;
+                cluster.scale.set(scale, scale, scale);
+                
+                // Add to scene
+                scene.add(cluster);
+            }
         }
     }, undefined, (error) => {
         console.error('Error loading Trees and Rocks:', error);

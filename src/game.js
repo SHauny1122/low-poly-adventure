@@ -448,6 +448,56 @@ function createClouds(scene) {
     });
 }
 
+// Create paths between buildings
+function createPaths(scene) {
+    const loader = new GLTFLoader();
+    const buildingPositions = [
+        { x: 50, z: -100 },      // Barracks
+        { x: -150, z: 100 },     // Farm
+        { x: 200, z: 150 },      // Sawmill
+        { x: -100, z: -200 }     // Houses
+    ];
+
+    loader.load('/src/assets/models/Path (1).glb', (gltf) => {
+        const pathModel = gltf.scene;
+        
+        // Create paths between consecutive buildings (including last to first)
+        for (let i = 0; i < buildingPositions.length; i++) {
+            const start = buildingPositions[i];
+            const end = buildingPositions[(i + 1) % buildingPositions.length];
+            
+            // Calculate distance and angle between buildings
+            const dx = end.x - start.x;
+            const dz = end.z - start.z;
+            const distance = Math.sqrt(dx * dx + dz * dz);
+            const angle = Math.atan2(dz, dx);
+            
+            // Create path segments
+            const segmentLength = 10; // Assuming each path segment is 10 units long
+            const numSegments = Math.ceil(distance / segmentLength);
+            
+            for (let j = 0; j < numSegments; j++) {
+                const segment = pathModel.clone();
+                
+                // Position segment along the path
+                const t = j / numSegments;
+                segment.position.x = start.x + dx * t;
+                segment.position.z = start.z + dz * t;
+                segment.position.y = 0.1; // Slightly above ground to prevent z-fighting
+                
+                // Rotate segment to point towards next building
+                segment.rotation.y = angle;
+                
+                // Scale segment to maintain consistent appearance
+                const scale = 2;
+                segment.scale.set(scale, scale, scale);
+                
+                scene.add(segment);
+            }
+        }
+    });
+}
+
 // Function to spawn gem at enemy death location
 function spawnGemAtLocation(scene, position, type = 'pink') {
     const loader = new GLTFLoader();
@@ -570,6 +620,7 @@ window.addEventListener('sceneReady', (e) => {
     createShrubs(scene);
     createClouds(scene);
     createChestAndGems(scene);
+    createPaths(scene);
     
     // Create buildings and locations first
     const buildings = new Buildings(scene, scene);
