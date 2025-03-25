@@ -66,14 +66,33 @@
             margin-right: 8px;
             border-radius: 2px;
         }
-        .minimap-edge-indicator {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            margin: -10px;
-            text-align: center;
-            line-height: 20px;
+        #joystickWrapper {
+            position: fixed;
+            left: 50px;
+            bottom: 50px;
             z-index: 1000;
+        }
+        #actionButtons {
+            position: fixed;
+            right: 50px;
+            bottom: 50px;
+            display: flex;
+            gap: 20px;
+            z-index: 1000;
+        }
+        #sprintButton, #attackButton {
+            width: 60px;
+            height: 60px;
+            margin: 5px;
+            opacity: 0.8;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         /* Mobile landscape orientation styles */
@@ -104,25 +123,6 @@
                 width: 8px;
                 height: 8px;
                 margin-right: 4px;
-            }
-            /* Adjust game controls for landscape */
-            #joystickWrapper {
-                position: fixed;
-                left: 50px;
-                bottom: 50px;
-            }
-            #actionButtons {
-                position: fixed;
-                right: 50px;
-                bottom: 50px;
-                display: flex;
-                gap: 20px;
-            }
-            #sprintButton, #attackButton {
-                width: 60px;
-                height: 60px;
-                margin: 5px;
-                opacity: 0.8;
             }
         }
 
