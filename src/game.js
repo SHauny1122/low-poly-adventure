@@ -13,16 +13,35 @@ let gemsCollected = 0;
 let clouds = [];
 let droppedGems = [];
 
-// Performance settings
-const SHADOW_MAP_SIZE = 512;  // Further reduced shadows
-const SHADOW_DISTANCE = 50;   // Shorter shadow distance
-const VIEW_DISTANCE = 200;    // Shorter view distance
-const FOG_COLOR = 0x90a4ae;
-const TREE_COUNT = 100;      // Reduced from 200
-const ROCK_COUNT = 20;       // Reduced from 40
-const GRASS_PATCH_COUNT = 2000; // Reduced from 5000
-const ENEMY_COUNT = 5;       // Reduced from 10
-const RENDER_DISTANCE = 100; // Only render close objects
+// Performance settings based on device
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+// Adjust settings based on device type
+const PERFORMANCE_SETTINGS = {
+    pc: {
+        SHADOW_MAP_SIZE: 512,
+        SHADOW_DISTANCE: 50,
+        VIEW_DISTANCE: 200,
+        FOG_COLOR: 0x90a4ae,
+        TREE_COUNT: 100,
+        ROCK_COUNT: 20,
+        GRASS_PATCH_COUNT: 2000,
+        RENDER_DISTANCE: 100
+    },
+    mobile: {
+        SHADOW_MAP_SIZE: 256,      // Lower shadow quality on mobile
+        SHADOW_DISTANCE: 30,       // Shorter shadow distance
+        VIEW_DISTANCE: 150,        // Slightly reduced view distance
+        FOG_COLOR: 0x90a4ae,      // Same fog color
+        TREE_COUNT: 100,          // Keep same number of trees
+        ROCK_COUNT: 20,           // Keep same number of rocks
+        GRASS_PATCH_COUNT: 2000,  // Keep same amount of grass
+        RENDER_DISTANCE: 80       // Slightly reduced render distance
+    }
+};
+
+// Use the appropriate settings based on device
+const settings = PERFORMANCE_SETTINGS[isMobile ? 'mobile' : 'pc'];
 
 // Track objects for culling
 let allObjects = [];
@@ -33,21 +52,21 @@ const CULL_INTERVAL = 500; // Check every 500ms
 export function initScene() {
     scene = new THREE.Scene();
     
-    scene.fog = new THREE.Fog(FOG_COLOR, VIEW_DISTANCE * 0.4, VIEW_DISTANCE);
-    scene.background = new THREE.Color(FOG_COLOR);
+    scene.fog = new THREE.Fog(settings.FOG_COLOR, settings.VIEW_DISTANCE * 0.4, settings.VIEW_DISTANCE);
+    scene.background = new THREE.Color(settings.FOG_COLOR);
     
     const light = new THREE.DirectionalLight(0xffffff, 1);
     light.position.set(100, 100, 0);
     light.castShadow = true;
     
-    light.shadow.mapSize.width = SHADOW_MAP_SIZE;
-    light.shadow.mapSize.height = SHADOW_MAP_SIZE;
+    light.shadow.mapSize.width = settings.SHADOW_MAP_SIZE;
+    light.shadow.mapSize.height = settings.SHADOW_MAP_SIZE;
     light.shadow.camera.near = 0.5;
-    light.shadow.camera.far = SHADOW_DISTANCE;
-    light.shadow.camera.left = -SHADOW_DISTANCE/2;
-    light.shadow.camera.right = SHADOW_DISTANCE/2;
-    light.shadow.camera.top = SHADOW_DISTANCE/2;
-    light.shadow.camera.bottom = -SHADOW_DISTANCE/2;
+    light.shadow.camera.far = settings.SHADOW_DISTANCE;
+    light.shadow.camera.left = -settings.SHADOW_DISTANCE/2;
+    light.shadow.camera.right = settings.SHADOW_DISTANCE/2;
+    light.shadow.camera.top = settings.SHADOW_DISTANCE/2;
+    light.shadow.camera.bottom = -settings.SHADOW_DISTANCE/2;
     
     scene.add(light);
     
@@ -76,7 +95,7 @@ function createTerrain() {
 }
 
 // Initialize trees with distance culling
-function createTrees(scene, count = TREE_COUNT) { 
+function createTrees(scene, count = settings.TREE_COUNT) { 
     const loader = new GLTFLoader();
     loader.load('/models/Pine Tree.glb', (gltf) => {
         const treeModel = gltf.scene;
@@ -123,7 +142,7 @@ function createTrees(scene, count = TREE_COUNT) {
 }
 
 // Initialize rocks with reduced count
-function createRocks(scene, count = ROCK_COUNT) {
+function createRocks(scene, count = settings.ROCK_COUNT) {
     const loader = new GLTFLoader();
     loader.load('/models/Rock.glb', (gltf) => {
         const rockModel = gltf.scene;
@@ -160,7 +179,7 @@ function createRocks(scene, count = ROCK_COUNT) {
 }
 
 // Initialize grass with reduced count
-function createGrassPatches(scene, count = GRASS_PATCH_COUNT) {
+function createGrassPatches(scene, count = settings.GRASS_PATCH_COUNT) {
     const loader = new GLTFLoader();
     
     loader.load('/models/Grass Patch (1).glb', (gltf) => {
@@ -584,23 +603,17 @@ function updateObjectVisibility(playerPosition) {
     const now = Date.now();
     if (now - lastCullTime < CULL_INTERVAL) return;
     lastCullTime = now;
-    
+
     allObjects.forEach(obj => {
-        const distance = playerPosition.distanceTo(obj.position);
-        const shouldBeVisible = distance < RENDER_DISTANCE;
+        const dx = obj.position.x - playerPosition.x;
+        const dz = obj.position.z - playerPosition.z;
+        const distanceSquared = dx * dx + dz * dz;
         
-        if (obj.object.visible !== shouldBeVisible) {
-            obj.object.visible = shouldBeVisible;
-            
-            // Only update shadows when visible
-            if (obj.object.traverse) {
-                obj.object.traverse(child => {
-                    if (child.isMesh) {
-                        child.castShadow = shouldBeVisible;
-                        child.receiveShadow = shouldBeVisible;
-                    }
-                });
-            }
+        // Use device-specific render distance
+        if (distanceSquared > settings.RENDER_DISTANCE * settings.RENDER_DISTANCE) {
+            if (obj.object.visible) obj.object.visible = false;
+        } else {
+            if (!obj.object.visible) obj.object.visible = true;
         }
     });
 }
@@ -614,9 +627,9 @@ window.addEventListener('sceneReady', (e) => {
     scene.add(terrain);
     
     // Create environment
-    createTrees(scene, TREE_COUNT);
-    createRocks(scene, ROCK_COUNT);
-    createGrassPatches(scene, GRASS_PATCH_COUNT);
+    createTrees(scene, settings.TREE_COUNT);
+    createRocks(scene, settings.ROCK_COUNT);
+    createGrassPatches(scene, settings.GRASS_PATCH_COUNT);
     createShrubs(scene);
     createClouds(scene);
     createChestAndGems(scene);
