@@ -1,0 +1,19 @@
+{
+  "name": "low-poly-adventure-level2",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.0.8"
+  },
+  "dependencies": {
+    "@types/three": "^0.174.0",
+    "nipplejs": "^0.10.1",
+    "three": "^0.160.1"
+  }
+}

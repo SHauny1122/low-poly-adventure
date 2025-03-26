@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { LocationManager } from './locations/LocationManager.js';
 import { Buildings } from './locations/Buildings.js';
 import { EnemyManager } from './enemies/EnemyManager.js';
+import { Portal } from './portal'; // Import Portal class
 
 // Game state
 let scene = null;
@@ -12,6 +13,7 @@ let gems = [];
 let gemsCollected = 0;
 let clouds = [];
 let droppedGems = [];
+let portal = null; // Initialize portal variable
 
 // Performance settings based on device
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -635,6 +637,11 @@ window.addEventListener('sceneReady', (e) => {
     createChestAndGems(scene);
     createPaths(scene);
     
+    // Create portal
+    portal = new Portal();
+    portal.setPosition(-50, 1, -50); // Position it away from other elements
+    scene.add(portal.group);
+    
     // Create buildings and locations first
     const buildings = new Buildings(scene, scene);
     locationManager = new LocationManager(scene, scene);
@@ -719,6 +726,16 @@ window.addEventListener('beforeRender', (e) => {
                 gemsCollected++;
                 console.log('Gem collected! Total:', gemsCollected);
             }
+        }
+    }
+    
+    // Update portal
+    if (portal) {
+        portal.update(delta);
+        
+        // Check portal collision
+        if (playerPosition && portal.checkCollision(playerPosition)) {
+            portal.transportToLevel(2); // Transport to Level 2
         }
     }
 });

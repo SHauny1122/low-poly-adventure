@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Low Poly Adventure - Level 2</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden;
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            background-color: #000;
+        }
+        canvas { 
+            width: 100vw;
+            height: 100vh;
+            display: block; 
+        }
+        #joystickWrapper {
+            position: fixed;
+            left: 50px;
+            bottom: 50px;
+            z-index: 1000;
+            width: 120px;
+            height: 120px;
+        }
+        #runButton, #shootButton {
+            position: fixed;
+            right: 50px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+            cursor: pointer;
+            z-index: 1000;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+        #runButton {
+            bottom: 130px;
+            background: rgba(76, 175, 80, 0.3);
+        }
+        #shootButton {
+            bottom: 50px;
+            background: rgba(244, 67, 54, 0.3);
+        }
+        #runButton:active, #shootButton:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        @media screen and (orientation: landscape) {
+            #runButton {
+                right: 130px;
+                bottom: 50px;
+            }
+            #shootButton {
+                right: 50px;
+                bottom: 50px;
+            }
+        }
+
+        #loadingScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 24px;
+            z-index: 2000;
+        }
+    </style>
+</head>
+<body>
+    <div id="loadingScreen">Loading Level 2...</div>
+    <div id="joystickWrapper"></div>
+    <script type="module" src="./src/main.js"></script>
+</body>
+</html>
