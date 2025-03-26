@@ -13,7 +13,7 @@ export class Portal {
         });
         
         this.mesh = new THREE.Mesh(geometry, material);
-        this.mesh.rotation.x = Math.PI / 2; // Make it stand upright
+        this.mesh.rotation.x = 0; // Make it stand upright
         
         // Add a simple glow effect
         const glowGeometry = new THREE.TorusGeometry(2.2, 0.4, 16, 32);
@@ -23,12 +23,59 @@ export class Portal {
             opacity: 0.3
         });
         this.glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
-        this.glowMesh.rotation.x = Math.PI / 2;
+        this.glowMesh.rotation.x = 0; // Match portal rotation
         
-        // Create a group to hold both meshes
+        // Create the portal center effect
+        const centerGeometry = new THREE.CircleGeometry(1.8, 32);
+        const centerMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                time: { value: 0 }
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform float time;
+                varying vec2 vUv;
+                
+                void main() {
+                    vec2 center = vec2(0.5, 0.5);
+                    float dist = length(vUv - center);
+                    
+                    // Create swirling effect
+                    float angle = atan(vUv.y - 0.5, vUv.x - 0.5);
+                    float spiral = sin(dist * 10.0 - time * 2.0 + angle * 4.0);
+                    
+                    // Create color gradient
+                    vec3 color1 = vec3(0.0, 0.8, 1.0); // Cyan
+                    vec3 color2 = vec3(0.0, 0.0, 0.8); // Dark blue
+                    vec3 color = mix(color1, color2, spiral * 0.5 + 0.5);
+                    
+                    // Add pulsing
+                    float pulse = sin(time * 3.0) * 0.2 + 0.8;
+                    
+                    // Add edge fade
+                    float edge = smoothstep(1.0, 0.8, dist);
+                    
+                    gl_FragColor = vec4(color * pulse, edge);
+                }
+            `,
+            transparent: true,
+            side: THREE.DoubleSide
+        });
+        
+        this.centerMesh = new THREE.Mesh(centerGeometry, centerMaterial);
+        this.centerMesh.rotation.x = 0;
+        
+        // Create a group to hold all meshes
         this.group = new THREE.Group();
         this.group.add(this.mesh);
         this.group.add(this.glowMesh);
+        this.group.add(this.centerMesh);
         
         // Add detection sphere for collision
         this.detectionRadius = 3;
@@ -48,6 +95,10 @@ export class Portal {
         // Pulse the glow
         const pulseScale = 1 + Math.sin(Date.now() * 0.002) * 0.1;
         this.glowMesh.scale.set(pulseScale, pulseScale, 1);
+        
+        if (this.centerMesh && this.centerMesh.material.uniforms) {
+            this.centerMesh.material.uniforms.time.value += delta;
+        }
     }
 
     checkCollision(playerPosition) {

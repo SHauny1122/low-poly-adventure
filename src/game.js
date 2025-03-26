@@ -639,7 +639,7 @@ window.addEventListener('sceneReady', (e) => {
     
     // Create portal
     portal = new Portal();
-    portal.setPosition(-50, 1, -50); // Position it away from other elements
+    portal.setPosition(50, 1, -70); // Position it closer to spawn point (50, 0, -80)
     scene.add(portal.group);
     
     // Create buildings and locations first

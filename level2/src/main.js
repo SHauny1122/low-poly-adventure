@@ -68,7 +68,7 @@ async function init() {
         // Create and position portal
         portal = new Portal();
         portal.setPosition(0, 1, -20);
-        portal.group.rotation.x = Math.PI / 2; // Rotate 90 degrees to stand upright
+        portal.group.rotation.z = Math.PI; // Rotate to face the right direction
         portal.group.scale.set(2, 2, 2); // Make portal twice as big
         scene.add(portal.group);
 
@@ -116,37 +116,36 @@ function onKeyDown(event) {
     if (event.code === 'ShiftLeft') {
         isSprinting = true;
     }
-    keys[event.key.toLowerCase()] = true;
+    keys[event.code] = true;  
 }
 
 function onKeyUp(event) {
     if (event.code === 'ShiftLeft') {
         isSprinting = false;
     }
-    keys[event.key.toLowerCase()] = false;
+    keys[event.code] = false;  
 }
 
-function updateCharacterMovement() {
-    if (!character || !character.group) return;
+function updateCharacterMovement(delta) {
+    if (!character || !character.loaded) return;
 
-    const delta = clock.getDelta();
     let moveZ = 0;
     let rotate = 0;
 
     // WASD and Arrow controls
-    if (keys.w || keys.ArrowUp) moveZ -= 1;
-    if (keys.s || keys.ArrowDown) moveZ += 1;
-    if (keys.a || keys.ArrowLeft) rotate += 1;
-    if (keys.d || keys.ArrowRight) rotate -= 1;
+    if (keys['KeyW'] || keys['ArrowUp']) moveZ -= 1;
+    if (keys['KeyS'] || keys['ArrowDown']) moveZ += 1;
+    if (keys['KeyA'] || keys['ArrowLeft']) rotate += 1;
+    if (keys['KeyD'] || keys['ArrowRight']) rotate -= 1;
 
-    // Apply rotation
-    character.model.rotation.y += rotate * ROTATION_SPEED * delta;
+    // Apply rotation to the group (which contains the model)
+    character.group.rotation.y += rotate * ROTATION_SPEED * delta;
 
-    // Calculate movement direction based on character's rotation
+    // Calculate movement direction based on group's rotation
     const moveDirection = new THREE.Vector3(
-        Math.sin(character.model.rotation.y) * -moveZ,
+        Math.sin(character.group.rotation.y) * -moveZ,
         0,
-        Math.cos(character.model.rotation.y) * -moveZ
+        Math.cos(character.group.rotation.y) * -moveZ
     );
 
     // Apply movement with acceleration
@@ -165,26 +164,21 @@ function updateCharacterMovement() {
         // Handle animations based on movement
         const speed = velocity.length();
         if (speed > 0.1) { // If moving
-            if (isSprinting && character.animations['CharacterArmature|Run']) {
+            if (isSprinting) {
                 character.playAnimation('CharacterArmature|Run', 0.3);
-            } else if (character.animations['CharacterArmature|Walk']) {
+            } else {
                 character.playAnimation('CharacterArmature|Walk', 0.3);
             }
-        } else if (character.animations['CharacterArmature|Idle']) {
+        } else {
             character.playAnimation('CharacterArmature|Idle', 0.3);
         }
     }
 
-    // Update mixer for animations
-    if (character.mixer) {
-        character.mixer.update(delta);
-    }
-
     // Update camera - always behind character
     const idealOffset = new THREE.Vector3(
-        -Math.sin(character.model.rotation.y) * CAMERA_DISTANCE,
+        -Math.sin(character.group.rotation.y) * CAMERA_DISTANCE,
         CAMERA_HEIGHT,
-        -Math.cos(character.model.rotation.y) * CAMERA_DISTANCE
+        -Math.cos(character.group.rotation.y) * CAMERA_DISTANCE
     );
 
     camera.position.lerp(character.group.position.clone().add(idealOffset), ROTATION_SMOOTHING);
@@ -203,11 +197,21 @@ function onWindowResize() {
 
 function animate() {
     requestAnimationFrame(animate);
-    
-    // Update character movement
-    updateCharacterMovement();
-    
-    // Render scene
+    const delta = clock.getDelta();
+
+    if (character && character.loaded) {
+        updateCharacterMovement(delta);
+        character.update(delta);
+        
+        // Check for portal collision
+        if (portal && portal.checkCollision(character)) {
+            portal.transportToLevel(1); // Transport back to level 1
+        }
+    }
+
+    if (portal) portal.update(delta);
+    if (city) city.update(delta);
+
     renderer.render(scene, camera);
 }
 

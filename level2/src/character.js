@@ -161,11 +161,11 @@ export class Character {
     }
 
     getPosition() {
-        return this.model ? this.model.position : new THREE.Vector3();
+        return this.group ? this.group.position : new THREE.Vector3();
     }
 
     getRotation() {
-        return this.model ? this.model.rotation : new THREE.Euler();
+        return this.group ? this.group.rotation : new THREE.Euler();
     }
 
     setShooting(shooting) {
