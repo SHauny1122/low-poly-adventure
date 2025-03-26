@@ -640,6 +640,7 @@ window.addEventListener('sceneReady', (e) => {
     // Create portal
     portal = new Portal();
     portal.setPosition(50, 1, -70); // Position it closer to spawn point (50, 0, -80)
+    portal.group.scale.set(2, 2, 2); // Make portal twice as big
     scene.add(portal.group);
     
     // Create buildings and locations first

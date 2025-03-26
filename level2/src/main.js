@@ -3,12 +3,16 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { Character } from './character';
 import { Portal } from './portal';
 import { CyberpunkCity } from './cyberpunkCity';
+import { DeLorean } from './vehicles/DeLorean';
+import { Truck } from './vehicles/Truck';
 
 let scene, camera, renderer;
 let character;
 let portal;
 let city;
 let clock;
+let delorean;
+let truck;
 const MOVEMENT_SPEED = 8;
 const SPRINT_SPEED = 16;
 const ACCELERATION = 4;
@@ -71,6 +75,22 @@ async function init() {
         portal.group.rotation.z = Math.PI; // Rotate to face the right direction
         portal.group.scale.set(2, 2, 2); // Make portal twice as big
         scene.add(portal.group);
+
+        // Create and position DeLorean
+        delorean = new DeLorean();
+        await delorean.load();
+        delorean.setPosition(5, 1, -15); // Raised Y position to be level with road
+        delorean.setRotation(0, Math.PI * 0.25, 0); // Angle it slightly
+        delorean.setScale(1);
+        scene.add(delorean.group);
+
+        // Create and position Truck
+        truck = new Truck();
+        await truck.load();
+        truck.setPosition(-5, 1, 20); // Keep same position
+        truck.setRotation(0, Math.PI * 0.1, 0); // Keep same rotation
+        truck.setScale(10); // Made it even bigger (8 -> 10)
+        scene.add(truck.group);
 
         // Add lights
         const ambientLight = new THREE.AmbientLight(0x666666); // Brighter ambient light
@@ -211,7 +231,8 @@ function animate() {
 
     if (portal) portal.update(delta);
     if (city) city.update(delta);
-
+    // Remove vehicle updates since they don't need them
+    
     renderer.render(scene, camera);
 }
 
