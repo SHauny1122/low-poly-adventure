@@ -13,7 +13,7 @@ export class DeLorean {
             const loader = new GLTFLoader();
             
             // Try to load from the correct path
-            const modelPath = '/models/DeLorean.glb';
+            const modelPath = '/models/vehicles/DeLorean.glb';
             console.log('Loading DeLorean from:', modelPath);
             
             loader.load(

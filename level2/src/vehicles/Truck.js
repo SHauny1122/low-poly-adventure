@@ -13,7 +13,7 @@ export class Truck {
             const loader = new GLTFLoader();
             
             // Try to load from the correct path
-            const modelPath = '/models/Truck.glb';
+            const modelPath = '/models/vehicles/Truck.glb';
             console.log('Loading Truck from:', modelPath);
             
             loader.load(

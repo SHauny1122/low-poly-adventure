@@ -24,50 +24,30 @@ export class Drone {
     async load() {
         return new Promise((resolve, reject) => {
             const loader = new GLTFLoader();
+            const modelPath = '/models/vehicles/BotDrone.glb';
+            console.log('Loading Drone from:', modelPath);
             
-            // Try alternative path formats
-            const modelPaths = [
-                '/models/vehicles/BotDrone.glb',
-                'models/vehicles/BotDrone.glb',
-                './models/vehicles/BotDrone.glb',
-                '../models/vehicles/BotDrone.glb'
-            ];
-
-            const tryLoadModel = (pathIndex) => {
-                if (pathIndex >= modelPaths.length) {
-                    console.error('Failed to load drone model after trying all paths');
-                    reject(new Error('Could not load drone model'));
-                    return;
-                }
-
-                const modelPath = modelPaths[pathIndex];
-                console.log('Attempting to load Drone from:', modelPath);
-                
-                loader.load(
-                    modelPath,
-                    (gltf) => {
-                        console.log('Drone loaded successfully from:', modelPath);
-                        this.model = gltf.scene;
-                        this.group.add(this.model);
-                        this.loaded = true;
-                        resolve(this.group);
-                    },
-                    (progress) => {
-                        if (progress.total > 0) {
-                            const percent = (progress.loaded / progress.total * 100).toFixed(2);
-                            console.log(`Loading progress for ${modelPath}:`, percent + '%');
-                        }
-                    },
-                    (error) => {
-                        console.warn(`Failed to load from ${modelPath}:`, error);
-                        // Try next path
-                        tryLoadModel(pathIndex + 1);
+            loader.load(
+                modelPath,
+                (gltf) => {
+                    console.log('Drone loaded successfully!');
+                    this.model = gltf.scene;
+                    this.group.add(this.model);
+                    this.loaded = true;
+                    resolve(this.group);
+                },
+                (progress) => {
+                    if (progress.total > 0) {
+                        const percent = (progress.loaded / progress.total * 100).toFixed(2);
+                        console.log('Loading progress:', percent + '%');
                     }
-                );
-            };
-
-            // Start trying paths
-            tryLoadModel(0);
+                },
+                (error) => {
+                    console.error('Error loading drone:', error);
+                    console.error('Was trying to load from:', modelPath);
+                    reject(error);
+                }
+            );
         });
     }
 
