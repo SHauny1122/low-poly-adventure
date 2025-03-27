@@ -2,9 +2,9 @@ export class AudioManager {
     constructor() {
         this.currentTrack = 0;
         this.tracks = [
-            '/level2/audio/cyberpunk-loop-1.wav',
-            '/level2/audio/cyberpunk-loop-2.wav',
-            '/level2/audio/cyberpunk-loop-3.wav'
+            '/level2/cyberpunk-loop-1.wav',
+            '/level2/cyberpunk-loop-2.wav',
+            '/level2/cyberpunk-loop-3.wav'
         ];
         this.audioElements = this.tracks.map(track => {
             const audio = new Audio(track);
