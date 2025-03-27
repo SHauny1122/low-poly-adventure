@@ -8,6 +8,7 @@ import { Truck } from './vehicles/Truck';
 import { Drone } from './vehicles/Drone';
 import { VendingMachine } from './props/VendingMachine';
 import nipplejs from 'nipplejs';
+import { AudioManager } from './audio/AudioManager';
 
 let scene, camera, renderer;
 let character;
@@ -222,6 +223,14 @@ async function init() {
             const light = new THREE.PointLight(color, 2, 30); // Increased intensity and range
             light.position.set(Math.sin(i * Math.PI * 2/3) * 15, 8, Math.cos(i * Math.PI * 2/3) * 15);
             scene.add(light);
+        });
+
+        // Initialize audio manager
+        const audioManager = new AudioManager();
+
+        // Start the music when the scene is ready
+        scene.addEventListener('ready', () => {
+            audioManager.start();
         });
 
         // Setup keyboard controls
