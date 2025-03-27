@@ -42,4 +42,13 @@ export class VendingMachine {
     setRotation(x, y, z) {
         this.group.rotation.set(x, y, z);
     }
+
+    setScale(scale) {
+        if (typeof scale === 'number') {
+            this.group.scale.set(scale, scale, scale);
+        } else if (Array.isArray(scale) || (scale && typeof scale === 'object' && 'x' in scale)) {
+            const { x = 1, y = 1, z = 1 } = scale;
+            this.group.scale.set(x, y, z);
+        }
+    }
 }
