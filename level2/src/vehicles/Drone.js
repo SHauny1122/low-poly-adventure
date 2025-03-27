@@ -24,36 +24,50 @@ export class Drone {
     async load() {
         return new Promise((resolve, reject) => {
             const loader = new GLTFLoader();
-            const modelPath = '/models/vehicles/BotDrone.glb';
-            console.log('Loading Drone from:', modelPath);
             
-            // Add error handler for the loader
-            loader.onError = (error) => {
-                console.error('Loader error:', error);
-            };
-            
-            loader.load(
-                modelPath,
-                (gltf) => {
-                    console.log('Drone loaded successfully!');
-                    this.model = gltf.scene;
-                    this.group.add(this.model);
-                    this.loaded = true;
-                    resolve(this.group);
-                },
-                (progress) => {
-                    if (progress.total > 0) {
-                        const percent = (progress.loaded / progress.total * 100).toFixed(2);
-                        console.log('Loading progress:', percent + '%');
-                    }
-                },
-                (error) => {
-                    console.error('Error loading drone:', error);
-                    console.error('Was trying to load from:', modelPath);
-                    console.error('Full error details:', error.target?.status, error.target?.statusText);
-                    reject(error);
+            // Try alternative path formats
+            const modelPaths = [
+                '/models/vehicles/BotDrone.glb',
+                'models/vehicles/BotDrone.glb',
+                './models/vehicles/BotDrone.glb',
+                '../models/vehicles/BotDrone.glb'
+            ];
+
+            const tryLoadModel = (pathIndex) => {
+                if (pathIndex >= modelPaths.length) {
+                    console.error('Failed to load drone model after trying all paths');
+                    reject(new Error('Could not load drone model'));
+                    return;
                 }
-            );
+
+                const modelPath = modelPaths[pathIndex];
+                console.log('Attempting to load Drone from:', modelPath);
+                
+                loader.load(
+                    modelPath,
+                    (gltf) => {
+                        console.log('Drone loaded successfully from:', modelPath);
+                        this.model = gltf.scene;
+                        this.group.add(this.model);
+                        this.loaded = true;
+                        resolve(this.group);
+                    },
+                    (progress) => {
+                        if (progress.total > 0) {
+                            const percent = (progress.loaded / progress.total * 100).toFixed(2);
+                            console.log(`Loading progress for ${modelPath}:`, percent + '%');
+                        }
+                    },
+                    (error) => {
+                        console.warn(`Failed to load from ${modelPath}:`, error);
+                        // Try next path
+                        tryLoadModel(pathIndex + 1);
+                    }
+                );
+            };
+
+            // Start trying paths
+            tryLoadModel(0);
         });
     }
 
@@ -72,26 +86,33 @@ export class Drone {
     update(delta) {
         if (!this.loaded) return;
 
-        // Update time
+        // Update position based on direction
+        let newZ = this.group.position.z + (this.speed * this.currentDirection);
+
+        // Check if we need to turn around
+        if (newZ >= this.maxZ) {
+            this.currentDirection = -1;
+            newZ = this.maxZ;
+        } else if (newZ <= this.minZ) {
+            this.currentDirection = 1;
+            newZ = this.minZ;
+        }
+
+        // Update time for bobbing motion
         this.time += delta;
 
         // Calculate bobbing motion
         const bobOffset = Math.sin(this.time * this.bobSpeed) * this.bobHeight;
 
-        // Update Z position (moving up and down the street)
-        this.group.position.z += this.speed * this.currentDirection;
+        // Update position with bobbing
+        this.group.position.set(
+            this.patrolX,
+            this.patrolY + bobOffset,
+            newZ
+        );
 
-        // Check if we need to turn around
-        if (this.group.position.z >= this.maxZ) {
-            this.currentDirection = -1;
-            this.group.rotation.y = Math.PI; // Turn to face the other way
-        } else if (this.group.position.z <= this.minZ) {
-            this.currentDirection = 1;
-            this.group.rotation.y = 0; // Turn to face forward
-        }
-
-        // Update position
-        this.group.position.x = this.patrolX;
-        this.group.position.y = this.patrolY + bobOffset;
+        // Update rotation to face movement direction
+        const targetRotation = this.currentDirection > 0 ? 0 : Math.PI;
+        this.group.rotation.y = targetRotation;
     }
 }
