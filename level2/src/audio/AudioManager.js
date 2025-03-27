@@ -2,9 +2,9 @@ export class AudioManager {
     constructor() {
         this.currentTrack = 0;
         this.tracks = [
-            '/audio/White Bat Audio - Casualty LOOP 1.wav',
-            '/audio/White Bat Audio - Casualty LOOP 2.wav',
-            '/audio/White Bat Audio - Casualty LOOP 3.wav'
+            '/audio/cyberpunk-loop-1.wav',
+            '/audio/cyberpunk-loop-2.wav',
+            '/audio/cyberpunk-loop-3.wav'
         ];
         this.audioElements = this.tracks.map(track => {
             const audio = new Audio(track);
@@ -30,7 +30,9 @@ export class AudioManager {
 
     start() {
         // Start with the first track
-        this.audioElements[0].play();
+        this.audioElements[0].play().catch(error => {
+            console.error('Error playing audio:', error);
+        });
     }
 
     stop() {
