@@ -9,8 +9,8 @@ export class Character {
         this.currentAnimation = null;
         this.isRunning = false;
         this.isShooting = false;
-        this.moveSpeed = 2;    // Reduced from 5 to 2 for walking
-        this.runSpeed = 4;     // Reduced from 10 to 4 for running
+        this.moveSpeed = 1;    // Reduced to 1 for even slower walking
+        this.runSpeed = 4;     // Kept running speed the same
         this.rotationSpeed = 0.15; // Added smooth rotation
         this.currentRotation = 0;
         this.group = new THREE.Group();
@@ -98,7 +98,7 @@ export class Character {
         if (name === 'CharacterArmature|Run') {
             action.setEffectiveTimeScale(1.0);
         } else if (name === 'CharacterArmature|Walk') {
-            action.setEffectiveTimeScale(0.7); // Slightly slower walk
+            action.setEffectiveTimeScale(1.0); // Increased from 0.7 to match walking pace
         } else {
             action.setEffectiveTimeScale(1.0);
         }

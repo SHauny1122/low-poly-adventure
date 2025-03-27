@@ -5,6 +5,9 @@ import { Portal } from './portal';
 import { CyberpunkCity } from './cyberpunkCity';
 import { DeLorean } from './vehicles/DeLorean';
 import { Truck } from './vehicles/Truck';
+import { Drone } from './vehicles/Drone';
+import { VendingMachine } from './props/VendingMachine';
+import nipplejs from 'nipplejs';
 
 let scene, camera, renderer;
 let character;
@@ -13,6 +16,8 @@ let city;
 let clock;
 let delorean;
 let truck;
+let drones = []; // Array to hold multiple drones
+let vendingMachines = []; // Array to store vending machines
 const MOVEMENT_SPEED = 8;
 const SPRINT_SPEED = 16;
 const ACCELERATION = 4;
@@ -20,7 +25,7 @@ const DECELERATION = 8;
 const ROTATION_SPEED = Math.PI * 1.0;
 const ROTATION_SMOOTHING = 0.15;
 const CAMERA_HEIGHT = 5;
-const CAMERA_DISTANCE = 12;
+const CAMERA_DISTANCE = 10.2; // Reduced by 15% from 12
 
 // Movement variables
 const velocity = new THREE.Vector3();
@@ -39,10 +44,72 @@ const keys = {
     ShiftLeft: false
 };
 
+// Joystick state (for mobile)
+const joystickState = {
+    forward: false,
+    backward: false,
+    left: false,
+    right: false,
+    force: 0
+};
+
+// Create joystick container
+const joystickContainer = document.createElement('div');
+joystickContainer.style.position = 'fixed';
+joystickContainer.style.bottom = '20px';
+joystickContainer.style.left = '20px';
+joystickContainer.style.width = '100px';
+joystickContainer.style.height = '100px';
+document.body.appendChild(joystickContainer);
+
+// Create joystick
+const joystick = nipplejs.create({
+    zone: joystickContainer,
+    mode: 'static',
+    position: { left: '50%', bottom: '50%' },
+    color: 'white',
+    size: 100
+});
+
+// Joystick event handlers
+joystick.on('move', (evt, data) => {
+    const angle = data.angle.radian;
+    const force = Math.min(data.force, 1.0);
+    joystickState.force = force;
+    
+    // Reset joystick state
+    joystickState.forward = false;
+    joystickState.backward = false;
+    joystickState.left = false;
+    joystickState.right = false;
+    
+    // Convert angle to cardinal directions
+    if (angle >= -Math.PI/4 && angle < Math.PI/4) {
+        joystickState.right = true;
+    } else if (angle >= Math.PI/4 && angle < 3*Math.PI/4) {
+        joystickState.forward = true;
+    } else if (angle >= 3*Math.PI/4 || angle < -3*Math.PI/4) {
+        joystickState.left = true;
+    } else {
+        joystickState.backward = true;
+    }
+});
+
+joystick.on('end', () => {
+    joystickState.forward = false;
+    joystickState.backward = false;
+    joystickState.left = false;
+    joystickState.right = false;
+    joystickState.force = 0;
+});
+
 async function init() {
     // Create scene
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a0a0a); // Dark background
+    // Add cyberpunk fog
+    const fogColor = new THREE.Color(0x150215); // Dark purple for cyberpunk feel
+    scene.fog = new THREE.FogExp2(fogColor, 0.015); // Exponential fog for more realistic distance falloff
+    scene.background = fogColor; // Match background with fog
 
     // Create camera
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -80,7 +147,7 @@ async function init() {
         delorean = new DeLorean();
         await delorean.load();
         delorean.setPosition(5, 1, -15); // Raised Y position to be level with road
-        delorean.setRotation(0, Math.PI * 0.25, 0); // Angle it slightly
+        delorean.setRotation(0, Math.PI * 0.139, 0); // Rotated 25 degrees (original 60 - 35)
         delorean.setScale(1);
         scene.add(delorean.group);
 
@@ -88,9 +155,58 @@ async function init() {
         truck = new Truck();
         await truck.load();
         truck.setPosition(-5, 1, 20); // Keep same position
-        truck.setRotation(0, Math.PI * 0.1, 0); // Keep same rotation
-        truck.setScale(10); // Made it even bigger (8 -> 10)
+        truck.setRotation(0, Math.PI * 0.5, 0); // Rotated 90 degrees to face along the street
+        truck.setScale(10.5); // Increased by 5% (10 * 1.05)
         scene.add(truck.group);
+
+        // Create and position drones
+        const NUM_DRONES = 5;
+        const STREET_LENGTH = 580; // Total patrol length
+        const DRONE_SPACING = STREET_LENGTH / NUM_DRONES; // Space them evenly
+
+        for (let i = 0; i < NUM_DRONES; i++) {
+            const drone = new Drone();
+            await drone.load();
+            
+            // Position drones evenly along the street with slight variations
+            const startZ = -290 + (i * DRONE_SPACING);
+            const height = 8 + (Math.random() * 2 - 1); // Height varies between 7-9
+            drone.setPosition(0, height, startZ);
+            drone.setScale(0.8);
+
+            // Give each drone a slightly different speed
+            drone.speed = 0.200 + (Math.random() * 0.04 - 0.02); // Speed varies ±0.02
+            
+            scene.add(drone.group);
+            drones.push(drone);
+        }
+
+        console.log('Starting to create vending machines...');
+        // Create and position vending machines along the street
+        const vendingMachinePositions = [
+            { x: -8, y: 1, z: -50, rotation: -Math.PI },     // Left side, facing road
+            { x: -8, y: 1, z: 50, rotation: -Math.PI },      // Left side, facing road
+            { x: -8, y: 1, z: 150, rotation: -Math.PI },     // Left side, facing road
+            { x: 8, y: 1, z: -100, rotation: 0 },            // Right side, facing road
+            { x: 8, y: 1, z: 0, rotation: 0 },               // Right side, facing road
+            { x: 8, y: 1, z: 100, rotation: 0 }              // Right side, facing road
+        ];
+
+        for (const pos of vendingMachinePositions) {
+            console.log('Creating vending machine at:', pos);
+            const vendingMachine = new VendingMachine();
+            try {
+                await vendingMachine.load();
+                vendingMachine.setPosition(pos.x, pos.y, pos.z);
+                vendingMachine.setRotation(0, pos.rotation, 0);
+                vendingMachine.setScale(1.5); // Slightly larger scale
+                scene.add(vendingMachine.group);
+                vendingMachines.push(vendingMachine);
+                console.log('Successfully added vending machine to scene');
+            } catch (error) {
+                console.error('Failed to create vending machine:', error);
+            }
+        }
 
         // Add lights
         const ambientLight = new THREE.AmbientLight(0x666666); // Brighter ambient light
@@ -152,24 +268,32 @@ function updateCharacterMovement(delta) {
     let moveZ = 0;
     let rotate = 0;
 
-    // WASD and Arrow controls
-    if (keys['KeyW'] || keys['ArrowUp']) moveZ -= 1;
-    if (keys['KeyS'] || keys['ArrowDown']) moveZ += 1;
+    // WASD and Arrow controls with joystick integration
+    if (keys['KeyW'] || keys['ArrowUp']) moveZ += 1;
+    if (keys['KeyS'] || keys['ArrowDown']) moveZ -= 1;
     if (keys['KeyA'] || keys['ArrowLeft']) rotate += 1;
     if (keys['KeyD'] || keys['ArrowRight']) rotate -= 1;
+
+    // Add joystick input
+    if (joystickState.forward) moveZ += joystickState.force;
+    if (joystickState.backward) moveZ -= joystickState.force;
+    if (joystickState.left) rotate += joystickState.force;
+    if (joystickState.right) rotate -= joystickState.force;
 
     // Apply rotation to the group (which contains the model)
     character.group.rotation.y += rotate * ROTATION_SPEED * delta;
 
-    // Calculate movement direction based on group's rotation
+    // Calculate movement direction based on character's rotation
     const moveDirection = new THREE.Vector3(
-        Math.sin(character.group.rotation.y) * -moveZ,
+        Math.sin(character.group.rotation.y) * moveZ,
         0,
-        Math.cos(character.group.rotation.y) * -moveZ
+        Math.cos(character.group.rotation.y) * moveZ
     );
 
-    // Apply movement with acceleration
+    // Update velocity based on movement input
     const targetVelocity = moveDirection.multiplyScalar(isSprinting ? SPRINT_SPEED : MOVEMENT_SPEED);
+
+    // Apply movement with acceleration
     velocity.lerp(targetVelocity, ACCELERATION * delta);
 
     // Calculate next position
@@ -231,8 +355,10 @@ function animate() {
 
     if (portal) portal.update(delta);
     if (city) city.update(delta);
-    // Remove vehicle updates since they don't need them
     
+    // Update drones
+    drones.forEach(drone => drone.update(delta));
+
     renderer.render(scene, camera);
 }
 
