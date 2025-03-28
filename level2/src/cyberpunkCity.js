@@ -631,7 +631,7 @@ export class CyberpunkCity {
         // Load zombie with animations
         const loader = new GLTFLoader();
         
-        // Use absolute path from root
+        // Use absolute path from root with exact case match
         const modelPath = '/models/Zombiewalk.glb';
         
         loader.load(modelPath, (gltf) => {
