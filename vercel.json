@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "level2/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/models/(.*)",
+      "dest": "/level2/public/models/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/level2/$1"
+    }
+  ]
+}
