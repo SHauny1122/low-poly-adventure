@@ -14,7 +14,7 @@ export class VendingMachine {
             console.log('Loading Vending Machine...');
             
             loader.load(
-                '/models/props/Vending Machine.glb',  // Fixed path for Vercel
+                '/models/props/Vending Machine.glb',  
                 (gltf) => {
                     this.model = gltf.scene;
                     this.group.add(this.model);

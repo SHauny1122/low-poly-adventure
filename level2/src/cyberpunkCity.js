@@ -55,7 +55,7 @@ export class CyberpunkCity {
         const animations = {};
         
         // Load walk animation
-        loader.load('/public/models/Zombiewalk.glb', (gltf) => {
+        loader.load('/models/Zombiewalk.glb', (gltf) => {
             console.log('Zombie model loaded');
             
             // Set up the zombie
@@ -78,13 +78,13 @@ export class CyberpunkCity {
             this.startAnimationLoop();
 
             // Load hit reaction animation
-            loader.load('/public/models/Zombiehitreaction.glb', (gltf) => {
+            loader.load('/models/Zombiehitreaction.glb', (gltf) => {
                 this.zombieState.animations.hit = gltf.animations[0];
                 console.log('Hit animation loaded');
             });
 
             // Load death animation
-            loader.load('/public/models/Zombiedead.glb', (gltf) => {
+            loader.load('/models/Zombiedead.glb', (gltf) => {
                 this.zombieState.animations.death = gltf.animations[0];
                 console.log('Death animation loaded and ready');
             });
