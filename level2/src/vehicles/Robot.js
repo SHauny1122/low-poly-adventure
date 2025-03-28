@@ -26,7 +26,7 @@ export class Robot {
     async load() {
         return new Promise((resolve, reject) => {
             const loader = new GLTFLoader();
-            const modelPath = '/public/models/robot.glb';  // Updated path
+            const modelPath = '/models/robot.glb';  // Fixed path for Vercel
             console.log('Loading Robot from:', modelPath);
             
             loader.load(
