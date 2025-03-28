@@ -8,15 +8,13 @@ export default defineConfig({
     },
     base: '/level2/', 
     build: {
-        outDir: 'dist',
-        assetsDir: 'assets',
+        outDir: 'dist/level2',
+        assetsDir: '.',
         rollupOptions: {
             input: {
                 main: resolve(__dirname, 'index.html')
             }
-        },
-        copyPublicDir: true
+        }
     },
-    publicDir: 'public',
-    assetsInclude: ['**/*.glb'] // Include .glb files as assets
+    publicDir: 'public'
 });
