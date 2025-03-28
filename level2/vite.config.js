@@ -8,11 +8,21 @@ export default defineConfig({
     },
     base: '/level2/', 
     build: {
-        outDir: 'dist/level2',
-        assetsDir: '.',
+        outDir: 'dist',
+        assetsDir: 'assets',
         rollupOptions: {
             input: {
                 main: resolve(__dirname, 'index.html')
+            },
+            output: {
+                assetFileNames: (assetInfo) => {
+                    // Keep the original path for model files
+                    if (assetInfo.name.endsWith('.glb')) {
+                        return 'models/[name][extname]';
+                    }
+                    // Other assets go in the assets directory
+                    return 'assets/[name].[hash][extname]';
+                }
             }
         }
     },
