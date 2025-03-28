@@ -14,7 +14,9 @@ export default defineConfig({
             input: {
                 main: resolve(__dirname, 'index.html')
             }
-        }
+        },
+        copyPublicDir: true
     },
-    publicDir: 'public' 
+    publicDir: 'public',
+    assetsInclude: ['**/*.glb'] // Include .glb files as assets
 });
