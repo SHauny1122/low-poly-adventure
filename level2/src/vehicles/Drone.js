@@ -24,7 +24,7 @@ export class Drone {
     async load() {
         return new Promise((resolve, reject) => {
             const loader = new GLTFLoader();
-            const modelPath = '/models/Drone.glb';
+            const modelPath = '/level2/models/Drone.glb';  // Include level2 prefix
             console.log('Loading Drone from:', modelPath);
             
             loader.load(
