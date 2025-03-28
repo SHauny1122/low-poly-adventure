@@ -14,7 +14,7 @@ export class VendingMachine {
             console.log('Loading Vending Machine...');
             
             loader.load(
-                '/level2/models/props/Vending Machine.glb',  // Include level2 prefix
+                '/models/props/Vending Machine.glb',
                 (gltf) => {
                     this.model = gltf.scene;
                     this.group.add(this.model);
