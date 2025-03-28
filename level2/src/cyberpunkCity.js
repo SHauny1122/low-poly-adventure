@@ -55,7 +55,7 @@ export class CyberpunkCity {
         const animations = {};
         
         // Load walk animation
-        loader.load('/models/Zombiewalk.glb', (gltf) => {
+        loader.load('./models/Zombiewalk.glb', (gltf) => {
             console.log('Zombie model loaded');
             
             // Set up the zombie
@@ -78,13 +78,13 @@ export class CyberpunkCity {
             this.startAnimationLoop();
 
             // Load hit reaction animation
-            loader.load('/models/Zombiehitreaction.glb', (gltf) => {
+            loader.load('./models/Zombiehitreaction.glb', (gltf) => {
                 this.zombieState.animations.hit = gltf.animations[0];
                 console.log('Hit animation loaded');
             });
 
             // Load death animation
-            loader.load('/models/Zombiedead.glb', (gltf) => {
+            loader.load('./models/Zombiedead.glb', (gltf) => {
                 this.zombieState.animations.death = gltf.animations[0];
                 console.log('Death animation loaded and ready');
             });
@@ -620,17 +620,21 @@ export class CyberpunkCity {
         checkSpawning();
     }
 
-    spawnZombie(playerPosition) {
+    spawnZombie(position) {
         if (this.zombieSpawnSystem.activeZombies >= this.zombieSpawnSystem.maxZombies) {
             return;
         }
 
-        const spawnPos = this.getRandomSpawnPosition(playerPosition);
+        const spawnPos = this.getRandomSpawnPosition(position);
         console.log('Spawning zombie at:', spawnPos);
         
         // Load zombie with animations
         const loader = new GLTFLoader();
-        loader.load('/models/Zombiewalk.glb', (gltf) => {
+        
+        // Use the correct path relative to the public directory
+        const modelPath = './models/Zombiewalk.glb';
+        
+        loader.load(modelPath, (gltf) => {
             console.log('Spawning new zombie');
             
             const zombie = gltf.scene;
@@ -639,8 +643,8 @@ export class CyberpunkCity {
             
             // Make zombie face the player
             const angle = Math.atan2(
-                playerPosition.x - spawnPos.x,
-                playerPosition.z - spawnPos.z
+                position.x - spawnPos.x,
+                position.z - spawnPos.z
             );
             zombie.rotation.y = angle;
             
@@ -651,11 +655,11 @@ export class CyberpunkCity {
             };
             
             // Load hit and death animations
-            loader.load('/models/Zombiehitreaction.glb', (hitGltf) => {
+            loader.load('./models/Zombiehitreaction.glb', (hitGltf) => {
                 animations.hit = hitGltf.animations[0];
             });
             
-            loader.load('/models/Zombiedead.glb', (deadGltf) => {
+            loader.load('./models/Zombiedead.glb', (deadGltf) => {
                 animations.death = deadGltf.animations[0];
             });
             
