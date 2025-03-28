@@ -26,7 +26,7 @@ export class Robot {
     async load() {
         return new Promise((resolve, reject) => {
             const loader = new GLTFLoader();
-            const modelPath = '/Models/Robot.glb';  // Exact case match
+            const modelPath = '/level2/models/robot.glb';  // Include level2 prefix
             console.log('Loading Robot from:', modelPath);
             
             loader.load(

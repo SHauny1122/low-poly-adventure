@@ -3,10 +3,10 @@ import { resolve } from 'path';
 
 export default defineConfig({
     server: {
-        port: 5174, // Different port from Level 1
+        port: 5174, 
         open: true
     },
-    base: './', // Use relative paths
+    base: '/level2/', 
     build: {
         outDir: 'dist',
         assetsDir: 'assets',
@@ -16,5 +16,5 @@ export default defineConfig({
             }
         }
     },
-    publicDir: 'public' // Serve files from public directory
+    publicDir: 'public' 
 });
