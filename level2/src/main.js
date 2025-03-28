@@ -6,9 +6,11 @@ import { CyberpunkCity } from './cyberpunkCity';
 import { DeLorean } from './vehicles/DeLorean';
 import { Truck } from './vehicles/Truck';
 import { Drone } from './vehicles/Drone';
+import { Robot } from './vehicles/Robot';  
 import { VendingMachine } from './props/VendingMachine';
 import nipplejs from 'nipplejs';
 import { AudioManager } from './audio/AudioManager';
+import { CombatSystem } from './combat/CombatSystem';
 
 let scene, camera, renderer;
 let character;
@@ -18,7 +20,11 @@ let clock;
 let delorean;
 let truck;
 let drones = []; // Array to hold multiple drones
+let robots = []; // Array to hold multiple robots
 let vendingMachines = []; // Array to store vending machines
+let joystick = null;
+let audioManager;
+let combatSystem;  
 const MOVEMENT_SPEED = 8;
 const SPRINT_SPEED = 16;
 const ACCELERATION = 4;
@@ -63,46 +69,49 @@ joystickContainer.style.width = '100px';
 joystickContainer.style.height = '100px';
 document.body.appendChild(joystickContainer);
 
-// Create joystick
-const joystick = nipplejs.create({
-    zone: joystickContainer,
-    mode: 'static',
-    position: { left: '50%', bottom: '50%' },
-    color: 'white',
-    size: 100
-});
+// Initialize joystick for mobile controls
+function initJoystick() {
+    const options = {
+        zone: joystickContainer,
+        mode: 'static',
+        position: { left: '50%', bottom: '50%' },
+        color: 'white',
+        size: 100
+    };
+    joystick = nipplejs.create(options);
 
-// Joystick event handlers
-joystick.on('move', (evt, data) => {
-    const angle = data.angle.radian;
-    const force = Math.min(data.force, 1.0);
-    joystickState.force = force;
-    
-    // Reset joystick state
-    joystickState.forward = false;
-    joystickState.backward = false;
-    joystickState.left = false;
-    joystickState.right = false;
-    
-    // Convert angle to cardinal directions
-    if (angle >= -Math.PI/4 && angle < Math.PI/4) {
-        joystickState.right = true;
-    } else if (angle >= Math.PI/4 && angle < 3*Math.PI/4) {
-        joystickState.forward = true;
-    } else if (angle >= 3*Math.PI/4 || angle < -3*Math.PI/4) {
-        joystickState.left = true;
-    } else {
-        joystickState.backward = true;
-    }
-});
+    // Joystick event handlers
+    joystick.on('move', (evt, data) => {
+        const angle = data.angle.radian;
+        const force = Math.min(data.force, 1.0);
+        joystickState.force = force;
+        
+        // Reset joystick state
+        joystickState.forward = false;
+        joystickState.backward = false;
+        joystickState.left = false;
+        joystickState.right = false;
+        
+        // Convert angle to cardinal directions
+        if (angle >= -Math.PI/4 && angle < Math.PI/4) {
+            joystickState.right = true;
+        } else if (angle >= Math.PI/4 && angle < 3*Math.PI/4) {
+            joystickState.forward = true;
+        } else if (angle >= 3*Math.PI/4 || angle < -3*Math.PI/4) {
+            joystickState.left = true;
+        } else {
+            joystickState.backward = true;
+        }
+    });
 
-joystick.on('end', () => {
-    joystickState.forward = false;
-    joystickState.backward = false;
-    joystickState.left = false;
-    joystickState.right = false;
-    joystickState.force = 0;
-});
+    joystick.on('end', () => {
+        joystickState.forward = false;
+        joystickState.backward = false;
+        joystickState.left = false;
+        joystickState.right = false;
+        joystickState.force = 0;
+    });
+}
 
 async function init() {
     // Create scene
@@ -209,6 +218,21 @@ async function init() {
             }
         }
 
+        // Create and position multiple robots
+        const robotCount = 5;
+        for (let i = 0; i < robotCount; i++) {
+            const robot = new Robot();
+            await robot.load();
+            robot.setScale(0.3); // Much smaller scale, changed from 2.0
+            
+            // Set initial position with offset
+            const startZ = -290 + ((580 / robotCount) * i); // Spread robots along street
+            robot.setPosition(4, 0, startZ); // Offset on X axis to not collide with drones
+            
+            robots.push(robot);
+            scene.add(robot.group);
+        }
+
         // Add lights
         const ambientLight = new THREE.AmbientLight(0x666666); // Brighter ambient light
         scene.add(ambientLight);
@@ -226,12 +250,15 @@ async function init() {
         });
 
         // Initialize audio manager
-        const audioManager = new AudioManager();
+        audioManager = new AudioManager();
 
         // Start the music when the scene is ready
         scene.addEventListener('ready', () => {
             audioManager.start();
         });
+
+        // Initialize combat system
+        combatSystem = new CombatSystem(scene, camera, character);
 
         // Setup keyboard controls
         document.addEventListener('keydown', onKeyDown);
@@ -245,6 +272,9 @@ async function init() {
         if (loadingScreen) {
             loadingScreen.style.display = 'none';
         }
+
+        // Initialize joystick
+        initJoystick();
 
         // Start animation loop
         animate();
@@ -366,9 +396,24 @@ function animate() {
     if (city) city.update(delta);
     
     // Update drones
-    drones.forEach(drone => drone.update(delta));
+    for (const drone of drones) {
+        drone.update(delta);
+    }
+    
+    // Update robots
+    for (const robot of robots) {
+        robot.update(delta);
+    }
 
-    renderer.render(scene, camera);
+    // Update combat system
+    combatSystem.update();
+
+    // Only render with main camera if not in combat mode
+    if (!combatSystem.isInCombatMode) {
+        renderer.render(scene, camera);
+    } else {
+        renderer.render(scene, combatSystem.combatCamera);
+    }
 }
 
 // Make camera available globally for frustum culling

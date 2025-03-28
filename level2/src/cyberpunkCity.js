@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
 export class CyberpunkCity {
     constructor() {
@@ -6,9 +7,211 @@ export class CyberpunkCity {
         this.colliders = []; // Array to store building colliders
         this.buildingInstances = []; // Store building instances for culling
         this.lightInstances = []; // Store light instances for culling
+        this.mixer = null;
+        this.zombie = null;
+        this.zombieDirection = 1;
+        this.clock = new THREE.Clock();
+        
+        // Zombie spawning system
+        this.zombieSpawnSystem = {
+            maxZombies: 5,
+            activeZombies: 0,
+            spawnRadius: { min: 50, max: 100 }, // Min and max distance from player
+            nextSpawnTime: 0,
+            spawnDelay: 5000, // 5 seconds between spawns
+        };
+
+        this.zombieState = {
+            health: 3,
+            isHit: false,
+            isDead: false,
+            currentAction: null,
+            animations: {}
+        };
+        this.raycaster = new THREE.Raycaster();
+
+        // Register shot handler with both window.scene and scene
+        const shotHandler = (crosshairPosition) => {
+            console.log('Shot detected, checking zombie hit...');
+            return this.handleShot(crosshairPosition);
+        };
+
+        if (window.scene) {
+            window.scene.onShot = shotHandler;
+        }
+
+        this.group.onShot = shotHandler;
+
         this.createStreet();
         this.createBuildings();
         this.createStreetLights();
+        
+        // Start zombie spawning system after a short delay to let everything load
+        setTimeout(() => this.startZombieSpawning(), 2000);
+    }
+
+    loadZombieAnimations() {
+        const loader = new GLTFLoader();
+        const animations = {};
+        
+        // Load walk animation
+        loader.load('/models/Zombiewalk.glb', (gltf) => {
+            console.log('Zombie model loaded');
+            
+            // Set up the zombie
+            this.zombie = gltf.scene;
+            this.zombie.scale.set(0.7, 0.7, 0.7);
+            this.zombie.position.set(-3, 0, -200);
+            this.zombie.rotation.y = 0;
+            
+            // Store walk animation
+            this.zombieState.animations.walk = gltf.animations.find(a => a.name === 'Armature|Walk');
+            console.log('Walk animation loaded');
+            
+            // Set up the mixer
+            this.mixer = new THREE.AnimationMixer(this.zombie);
+            
+            // Start walking
+            this.playAnimation('walk');
+            
+            this.group.add(this.zombie);
+            this.startAnimationLoop();
+
+            // Load hit reaction animation
+            loader.load('/models/Zombiehitreaction.glb', (gltf) => {
+                this.zombieState.animations.hit = gltf.animations[0];
+                console.log('Hit animation loaded');
+            });
+
+            // Load death animation
+            loader.load('/models/Zombiedead.glb', (gltf) => {
+                this.zombieState.animations.death = gltf.animations[0];
+                console.log('Death animation loaded and ready');
+            });
+        });
+    }
+
+    playAnimation(animationName, loop = true) {
+        if (this.zombieState.currentAction) {
+            this.zombieState.currentAction.stop();
+        }
+
+        if (this.zombieState.animations[animationName] && this.mixer) {
+            console.log('Playing animation:', animationName);
+            const action = this.mixer.clipAction(this.zombieState.animations[animationName]);
+            if (!loop) {
+                action.setLoop(THREE.LoopOnce);
+                action.clampWhenFinished = true;
+            }
+            action.play();
+            this.zombieState.currentAction = action;
+        } else {
+            console.log('Animation not found:', animationName, 'Available animations:', Object.keys(this.zombieState.animations));
+        }
+    }
+
+    handleShot(crosshairPosition) {
+        if (!window.combatCamera) {
+            console.log('No combat camera found!');
+            return false;
+        }
+
+        this.raycaster.setFromCamera(crosshairPosition, window.combatCamera);
+        
+        // Check all zombies for hits
+        const zombies = this.group.children.filter(child => child.userData && child.userData.state);
+        
+        for (const zombie of zombies) {
+            const state = zombie.userData.state;
+            
+            // Skip dead or already hit zombies
+            if (state.isDead || state.isHit) continue;
+            
+            const intersects = this.raycaster.intersectObject(zombie, true);
+            
+            if (intersects.length > 0) {
+                console.log('Zombie hit! Health:', state.health);
+                state.health--;
+                state.isHit = true;
+                
+                if (state.health <= 0) {
+                    console.log('Zombie killed!');
+                    state.isDead = true;
+                    
+                    if (state.currentAction) {
+                        state.currentAction.stop();
+                    }
+                    
+                    // Play death animation
+                    if (state.animations.death && state.mixer) {
+                        const deathAction = state.mixer.clipAction(state.animations.death);
+                        deathAction.setLoop(THREE.LoopOnce);
+                        deathAction.clampWhenFinished = true;
+                        deathAction.play();
+                        state.currentAction = deathAction;
+                        
+                        // Remove zombie after animation
+                        setTimeout(() => {
+                            this.group.remove(zombie);
+                            this.zombieSpawnSystem.activeZombies--;
+                            console.log('Zombie removed, remaining:', this.zombieSpawnSystem.activeZombies);
+                        }, 3000);
+                    }
+                } else {
+                    // Play hit animation
+                    if (state.animations.hit && state.mixer) {
+                        const hitAction = state.mixer.clipAction(state.animations.hit);
+                        hitAction.setLoop(THREE.LoopOnce);
+                        hitAction.clampWhenFinished = true;
+                        hitAction.play();
+                        state.currentAction = hitAction;
+                        
+                        // Resume walking after hit
+                        setTimeout(() => {
+                            state.isHit = false;
+                            if (!state.isDead && state.animations.walk) {
+                                const walkAction = state.mixer.clipAction(state.animations.walk);
+                                walkAction.play();
+                                state.currentAction = walkAction;
+                            }
+                        }, 1000);
+                    }
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    startAnimationLoop() {
+        const animate = () => {
+            requestAnimationFrame(animate);
+            
+            if (this.mixer && this.zombie) {
+                const delta = this.clock.getDelta();
+                
+                // Update animation
+                this.mixer.update(delta);
+                
+                // Only move if not being hit or dead
+                if (!this.zombieState.isHit && !this.zombieState.isDead) {
+                    // Move zombie
+                    const speed = 2;
+                    this.zombie.position.z += this.zombieDirection * speed * delta;
+                    
+                    // Check boundaries and turn around
+                    if (this.zombie.position.z > 250) {
+                        this.zombieDirection = -1;
+                        this.zombie.rotation.y = Math.PI;
+                    } else if (this.zombie.position.z < -250) {
+                        this.zombieDirection = 1;
+                        this.zombie.rotation.y = 0;
+                    }
+                }
+            }
+        };
+        
+        animate();
     }
 
     createStreet() {
@@ -239,13 +442,13 @@ export class CyberpunkCity {
         const holoCount = Math.floor(Math.random() * 2) + 1; // 1-2 holos per building
         for (let i = 0; i < holoCount; i++) {
             // Create hologram frame
-            const frameGeometry = new THREE.BoxGeometry(3, 4, 0.2);
+            const frameGeometry = new THREE.BoxGeometry(3, 4, 0.1);
             const frameMaterial = new THREE.MeshPhongMaterial({
                 color: 0x0088ff,
                 emissive: 0x0088ff,
                 emissiveIntensity: 1,
+                shininess: 100
             });
-            const frame = new THREE.Mesh(frameGeometry, frameMaterial);
             
             // Create hologram "screen"
             const screenGeometry = new THREE.PlaneGeometry(2.8, 3.8);
@@ -257,28 +460,25 @@ export class CyberpunkCity {
                 opacity: 0.3,
             });
             const screen = new THREE.Mesh(screenGeometry, screenMaterial);
-            screen.position.z = 0.1;
             
-            // Create hologram group
-            const holoGroup = new THREE.Group();
-            holoGroup.add(frame);
-            holoGroup.add(screen);
+            // Position frame and screen
+            frameGeometry.translate(0, 0, 0.05);
+            const frame = new THREE.Mesh(frameGeometry, frameMaterial);
+            frame.position.set(x + width/2 + 0.1, height/2, z);
+            screen.position.set(x + width/2 + 0.15, height/2, z);
             
-            // Position hologram on building and rotate to face along the street
-            const isLeftSide = x < 0;
-            holoGroup.position.set(
-                x + (isLeftSide ? width/2 - 0.1 : -width/2 + 0.1), // Place on building edge
-                y + height * 0.6 + Math.random() * (height * 0.3),
-                z
-            );
-            
-            // Rotate to face forward/backward along street
-            holoGroup.rotation.y = Math.PI * (Math.random() < 0.5 ? 0 : 1); // 50% chance to face each direction
-            
+            this.group.add(frame);
+            this.group.add(screen);
+
             // Store original position for animation
-            holoGroup.userData.originalY = holoGroup.position.y;
+            frame.userData.originalY = frame.position.y;
             
-            this.group.add(holoGroup);
+            // Animate hologram
+            const animateHologram = () => {
+                requestAnimationFrame(animateHologram);
+                frame.position.y = frame.userData.originalY + Math.sin(Date.now() * 0.01) * 0.1;
+            };
+            animateHologram();
         }
 
         this.group.add(building);
@@ -353,50 +553,163 @@ export class CyberpunkCity {
         return colors[Math.floor(Math.random() * colors.length)];
     }
 
+    getRandomSpawnPosition(playerPosition) {
+        // Street boundaries
+        const streetBounds = {
+            minX: -5,  // Left side of street
+            maxX: 5,   // Right side of street
+            minZ: -250, // Start of street
+            maxZ: 250   // End of street
+        };
+
+        // Get random X position within street width
+        const x = Math.random() * (streetBounds.maxX - streetBounds.minX) + streetBounds.minX;
+        
+        // Get random Z position ahead or behind player
+        let z;
+        const spawnDistance = this.zombieSpawnSystem.spawnRadius.min + 
+            Math.random() * (this.zombieSpawnSystem.spawnRadius.max - this.zombieSpawnSystem.spawnRadius.min);
+            
+        // 50% chance to spawn ahead or behind
+        if (Math.random() < 0.5) {
+            z = playerPosition.z + spawnDistance;
+        } else {
+            z = playerPosition.z - spawnDistance;
+        }
+        
+        // Clamp Z position to street bounds
+        z = Math.max(streetBounds.minZ, Math.min(streetBounds.maxZ, z));
+        
+        console.log('Street-aligned spawn position:', { x, z });
+        return { x, z };
+    }
+
+    startZombieSpawning() {
+        console.log('Starting zombie spawning system...');
+        const checkSpawning = () => {
+            requestAnimationFrame(checkSpawning);
+            
+            // Get player position from character if available
+            const playerPosition = window.character ? window.character.group.position : new THREE.Vector3(0, 0, 0);
+            
+            const now = Date.now();
+            
+            // Check if it's time to spawn and we have room for more zombies
+            if (now > this.zombieSpawnSystem.nextSpawnTime && 
+                this.zombieSpawnSystem.activeZombies < this.zombieSpawnSystem.maxZombies) {
+                
+                this.spawnZombie(playerPosition);
+                
+                // Set next spawn time
+                this.zombieSpawnSystem.nextSpawnTime = now + this.zombieSpawnSystem.spawnDelay;
+            }
+            
+            // Update all zombie mixers
+            const delta = this.clock.getDelta();
+            this.group.children.forEach(child => {
+                if (child.userData && child.userData.state && child.userData.state.mixer) {
+                    child.userData.state.mixer.update(delta);
+                }
+            });
+        };
+        
+        // Start with one zombie
+        this.spawnZombie(new THREE.Vector3(0, 0, 0));
+        this.zombieSpawnSystem.nextSpawnTime = Date.now() + this.zombieSpawnSystem.spawnDelay;
+        
+        checkSpawning();
+    }
+
+    spawnZombie(playerPosition) {
+        if (this.zombieSpawnSystem.activeZombies >= this.zombieSpawnSystem.maxZombies) {
+            return;
+        }
+
+        const spawnPos = this.getRandomSpawnPosition(playerPosition);
+        console.log('Spawning zombie at:', spawnPos);
+        
+        // Load zombie with animations
+        const loader = new GLTFLoader();
+        loader.load('/models/Zombiewalk.glb', (gltf) => {
+            console.log('Spawning new zombie');
+            
+            const zombie = gltf.scene;
+            zombie.scale.set(0.7, 0.7, 0.7);
+            zombie.position.set(spawnPos.x, 0, spawnPos.z);
+            
+            // Make zombie face the player
+            const angle = Math.atan2(
+                playerPosition.x - spawnPos.x,
+                playerPosition.z - spawnPos.z
+            );
+            zombie.rotation.y = angle;
+            
+            // Set up animations
+            const mixer = new THREE.AnimationMixer(zombie);
+            const animations = {
+                walk: gltf.animations.find(a => a.name === 'Armature|Walk')
+            };
+            
+            // Load hit and death animations
+            loader.load('/models/Zombiehitreaction.glb', (hitGltf) => {
+                animations.hit = hitGltf.animations[0];
+            });
+            
+            loader.load('/models/Zombiedead.glb', (deadGltf) => {
+                animations.death = deadGltf.animations[0];
+            });
+            
+            // Create zombie state
+            const zombieState = {
+                health: 3,
+                isHit: false,
+                isDead: false,
+                currentAction: null,
+                animations: animations,
+                mixer: mixer
+            };
+            
+            // Store state on zombie object
+            zombie.userData.state = zombieState;
+            
+            // Start walking animation
+            const walkAction = mixer.clipAction(animations.walk);
+            walkAction.play();
+            zombieState.currentAction = walkAction;
+            
+            this.group.add(zombie);
+            this.zombieSpawnSystem.activeZombies++;
+            
+            console.log('New zombie spawned, total:', this.zombieSpawnSystem.activeZombies);
+        });
+    }
+
     update(delta) {
-        // Only update visible objects
-        const frustum = new THREE.Frustum();
-        const camera = window.camera; // Get the camera from the global scope
-        if (!camera) return;
+        // Skip frustum culling if camera is not available
+        if (window.camera) {
+            const frustum = new THREE.Frustum();
+            frustum.setFromProjectionMatrix(
+                new THREE.Matrix4().multiplyMatrices(
+                    window.camera.projectionMatrix,
+                    window.camera.matrixWorldInverse
+                )
+            );
 
-        frustum.setFromProjectionMatrix(
-            new THREE.Matrix4().multiplyMatrices(
-                camera.projectionMatrix,
-                camera.matrixWorldInverse
-            )
-        );
-
-        // Update only visible buildings
-        this.buildingInstances.forEach(building => {
-            if (frustum.containsPoint(building.position)) {
-                // Update building animations/effects here if needed
-            }
-        });
-
-        // Update only visible lights
-        this.lightInstances.forEach(light => {
-            if (frustum.containsPoint(light.position)) {
-                light.rotation.y += delta * 0.5;
-            }
-        });
+            // Update only visible buildings
+            this.buildingInstances.forEach(building => {
+                if (frustum.containsPoint(building.position)) {
+                    building.visible = true;
+                } else {
+                    building.visible = false;
+                }
+            });
+        }
 
         // Make windows and signs flicker occasionally
         this.group.children.forEach(child => {
             if (child.material && child.material.emissive) {
-                if (Math.random() > 0.99) { // 1% chance to flicker
+                if (Math.random() < 0.01) {
                     child.material.emissiveIntensity = 0.5 + Math.random() * 1.5;
-                }
-            }
-
-            // Animate holograms
-            if (child instanceof THREE.Group && child.children.length === 2) {
-                // Check if it's our hologram group (has frame and screen)
-                const screen = child.children[1];
-                if (screen.material.opacity) {
-                    // Float up and down
-                    child.position.y = child.userData.originalY + Math.sin(Date.now() * 0.001) * 0.2;
-                    // Pulse opacity
-                    screen.material.opacity = 0.3 + Math.sin(Date.now() * 0.002) * 0.1;
                 }
             }
         });

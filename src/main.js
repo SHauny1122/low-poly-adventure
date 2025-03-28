@@ -50,6 +50,9 @@ scene.background = new THREE.Color(0x87CEEB); // Sky blue color
 // Add subtle fog
 scene.fog = new THREE.FogExp2(0x87CEEB, 0.008); // Increased density for more atmosphere
 
+// Make scene globally available
+window.scene = scene;
+
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
 
 // Set initial camera position behind where character will spawn
