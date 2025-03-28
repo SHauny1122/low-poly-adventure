@@ -130,6 +130,9 @@ async function init() {
     renderer.shadowMap.enabled = true;
     document.body.appendChild(renderer.domElement);
 
+    // Initialize joystick for mobile controls
+    initJoystick();
+
     // Create clock
     clock = new THREE.Clock();
 
@@ -272,9 +275,6 @@ async function init() {
         if (loadingScreen) {
             loadingScreen.style.display = 'none';
         }
-
-        // Initialize joystick
-        initJoystick();
 
         // Start animation loop
         animate();
