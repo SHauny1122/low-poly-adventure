@@ -14,7 +14,7 @@ export class VendingMachine {
             console.log('Loading Vending Machine...');
             
             loader.load(
-                './models/props/Vending Machine.glb',  
+                '/models/props/Vending Machine.glb',  // Use absolute path from root
                 (gltf) => {
                     this.model = gltf.scene;
                     this.group.add(this.model);
