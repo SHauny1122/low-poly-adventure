@@ -8,20 +8,11 @@ export function getAssetPath(path) {
     if (window.location.hostname !== 'localhost') {
         // Check for special cases
         if (path.includes('Astronaut') && !path.includes('character/')) {
-            return `/models/character/${path}`;
-        }
-        
-        if (path === 'VendingMachine.glb') {
-            return `/models/props/Vending Machine.glb`;
-        }
-        
-        // For zombie models, they're already in the models directory
-        if (path.startsWith('Zombie')) {
-            return `/models/${path}`;
+            return `/models/character/${path.replace('models/', '')}`;
         }
         
         // For all other models
-        return `/models/${path}`;
+        return `/models/${path.replace('models/', '')}`;
     }
     
     // For local development
