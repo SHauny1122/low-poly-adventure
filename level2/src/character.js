@@ -48,7 +48,7 @@ export class Character {
 
     loadModel() {
         const loader = new GLTFLoader();
-        loader.load('assets/models/character/Astronaut.glb', (gltf) => {
+        loader.load('models/character/Astronaut.glb', (gltf) => {
             const model = gltf.scene;
             model.scale.set(1, 1, 1); // Back to original size
             this.group.add(model);

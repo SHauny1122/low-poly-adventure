@@ -6,9 +6,9 @@ export function getAssetPath(path) {
     
     // For production (Vercel)
     if (window.location.hostname !== 'localhost') {
-        return `/level2/assets/${path}`;
+        return `/level2/${path}`;
     }
     
     // For local development
-    return `/assets/${path}`;
+    return `/${path}`;
 }
