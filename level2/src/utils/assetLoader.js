@@ -16,5 +16,5 @@ export function getAssetPath(path) {
     }
     
     // For local development
-    return `/${path}`;
+    return `/models/${path.replace('models/', '')}`;
 }

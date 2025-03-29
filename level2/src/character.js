@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { getAssetPath } from './utils/assetLoader';
 
 export class Character {
     constructor() {
@@ -49,7 +48,7 @@ export class Character {
 
     loadModel() {
         const loader = new GLTFLoader();
-        loader.load(getAssetPath('models/Astronaut.glb'), (gltf) => {
+        loader.load('/level2/models/character/Astronaut.glb', (gltf) => {
             const model = gltf.scene;
             model.scale.set(1, 1, 1); // Back to original size
             this.group.add(model);

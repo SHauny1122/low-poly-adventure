@@ -9,56 +9,13 @@ export class CyberpunkCity {
         this.buildingInstances = []; // Store building instances for culling
         this.lightInstances = []; // Store light instances for culling
         this.mixer = null;
-        this.astronaut = null;
         this.clock = new THREE.Clock();
         
         this.createStreet();
         this.createBuildings();
         this.createStreetLights();
-        this.loadAstronaut();
     }
 
-    loadAstronaut() {
-        const loader = new GLTFLoader();
-        const modelPath = getAssetPath('Astronaut.glb');
-        
-        loader.load(modelPath, (gltf) => {
-            console.log('Astronaut model loaded');
-            
-            // Set up the astronaut
-            this.astronaut = gltf.scene;
-            this.astronaut.scale.set(0.7, 0.7, 0.7);
-            this.astronaut.position.set(0, 0, 0);
-            
-            // Add to scene
-            this.group.add(this.astronaut);
-            
-            // Set up animation mixer
-            this.mixer = new THREE.AnimationMixer(this.astronaut);
-            this.animations = {
-                idle: gltf.animations[0]
-            };
-            
-            // Start idle animation
-            const idleAction = this.mixer.clipAction(this.animations.idle);
-            idleAction.play();
-            
-            // Start animation loop
-            this.startAnimationLoop();
-        });
-    }
-    
-    startAnimationLoop() {
-        // Update animations
-        const delta = this.clock.getDelta();
-        if (this.mixer) {
-            this.mixer.update(delta);
-        }
-        
-        // Request next frame
-        requestAnimationFrame(() => this.startAnimationLoop());
-    }
-    
     createStreet() {
         // Create road - make it even longer
         const roadGeometry = new THREE.PlaneGeometry(20, 600); // Doubled length to 600
