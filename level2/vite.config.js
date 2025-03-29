@@ -4,12 +4,12 @@ import { resolve } from 'path';
 export default defineConfig({
     base: '/level2/',
     server: {
-        port: 5174, 
+        port: 5174,
         open: true
     },
     build: {
         outDir: 'dist',
-        assetsDir: '',  
+        assetsDir: 'assets',
         rollupOptions: {
             input: {
                 main: resolve(__dirname, 'index.html')
