@@ -41,36 +41,31 @@ export class Zombie {
     loadModel() {
         const loader = new GLTFLoader();
         
-        // Load the walking animation model
-        loader.load('/models/character/Zombiewalk.glb', (gltf) => {
+        // Load the animated zombie model
+        loader.load('/models/character/Animated Zombie.glb', (gltf) => {
             const model = gltf.scene;
             model.scale.set(0.8, 0.8, 0.8); // Adjust scale as needed
             this.group.add(model);
             this.model = model;
             this.mixer = new THREE.AnimationMixer(this.model);
             
-            // Store walking animation
+            // Store animations
             if (gltf.animations && gltf.animations.length > 0) {
+                // Assuming the first animation is walking
                 this.animations['walk'] = gltf.animations[0];
+                
+                // If there are more animations, we can use them for other states
+                if (gltf.animations.length > 1) {
+                    this.animations['hit'] = gltf.animations[1];
+                }
+                if (gltf.animations.length > 2) {
+                    this.animations['dead'] = gltf.animations[2];
+                }
             }
             
-            // Load hit reaction animation
-            loader.load('/models/character/Zombiehitreaction.glb', (hitGltf) => {
-                if (hitGltf.animations && hitGltf.animations.length > 0) {
-                    this.animations['hit'] = hitGltf.animations[0];
-                }
-                
-                // Load death animation
-                loader.load('/models/character/Zombiedead.glb', (deadGltf) => {
-                    if (deadGltf.animations && deadGltf.animations.length > 0) {
-                        this.animations['dead'] = deadGltf.animations[0];
-                    }
-                    
-                    // Play walking animation by default
-                    this.playAnimation('walk');
-                    this.loaded = true;
-                });
-            });
+            // Play walking animation by default
+            this.playAnimation('walk');
+            this.loaded = true;
         }, undefined, (error) => {
             console.error('Error loading zombie model:', error);
         });
