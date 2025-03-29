@@ -8,7 +8,6 @@ import { Truck } from './vehicles/Truck';
 import { Drone } from './vehicles/Drone';
 import { Robot } from './vehicles/Robot';  
 import { VendingMachine } from './props/VendingMachine';
-import { Zombie } from './enemies/Zombie';
 import nipplejs from 'nipplejs';
 import { AudioManager } from './audio/AudioManager';
 import { CombatSystem } from './combat/CombatSystem';
@@ -23,7 +22,6 @@ let truck;
 let drones = []; // Array to hold multiple drones
 let robots = []; // Array to hold multiple robots
 let vendingMachines = []; // Array to store vending machines
-let zombies = []; // Array to store zombies
 let joystick = null;
 let audioManager;
 let combatSystem;  
@@ -194,35 +192,6 @@ async function init() {
         }
         */
 
-        /*
-        console.log('Starting to create vending machines...');
-        // Create and position vending machines along the street
-        const vendingMachinePositions = [
-            { x: -8, y: 1, z: -50, rotation: -Math.PI },     // Left side, facing road
-            { x: -8, y: 1, z: 50, rotation: -Math.PI },      // Left side, facing road
-            { x: -8, y: 1, z: 150, rotation: -Math.PI },     // Left side, facing road
-            { x: 8, y: 1, z: -100, rotation: 0 },            // Right side, facing road
-            { x: 8, y: 1, z: 0, rotation: 0 },               // Right side, facing road
-            { x: 8, y: 1, z: 100, rotation: 0 }              // Right side, facing road
-        ];
-
-        for (const pos of vendingMachinePositions) {
-            console.log('Creating vending machine at:', pos);
-            const vendingMachine = new VendingMachine();
-            try {
-                await vendingMachine.load();
-                vendingMachine.setPosition(pos.x, pos.y, pos.z);
-                vendingMachine.setRotation(0, pos.rotation, 0);
-                vendingMachine.setScale(1.5); // Slightly larger scale
-                scene.add(vendingMachine.group);
-                vendingMachines.push(vendingMachine);
-                console.log('Successfully added vending machine to scene');
-            } catch (error) {
-                console.error('Failed to create vending machine:', error);
-            }
-        }
-        */
-
         // Create and position multiple robots
         // const robotCount = 5;
         // for (let i = 0; i < robotCount; i++) {
@@ -237,24 +206,6 @@ async function init() {
         //     robots.push(robot);
         //     scene.add(robot.group);
         // }
-
-        // Create and position zombies along the street
-        const zombieCount = 8; // Number of zombies to create
-        for (let i = 0; i < zombieCount; i++) {
-            const zombie = new Zombie();
-            await zombie.load();
-            
-            // Set random position along the street
-            const side = Math.random() > 0.5 ? 1 : -1; // Randomly choose left or right side
-            const startZ = -250 + (Math.random() * 500); // Random position along the street
-            const xOffset = side * (Math.random() * 3 + 2); // Random offset from center
-            
-            zombie.setPosition(xOffset, 0, startZ);
-            zombie.setTarget(character); // Set player as target
-            
-            zombies.push(zombie);
-            scene.add(zombie.group);
-        }
 
         // Add lights
         const ambientLight = new THREE.AmbientLight(0x666666); // Brighter ambient light
@@ -426,17 +377,6 @@ function animate() {
     // Update robots
     for (const robot of robots) {
         robot.update(delta);
-    }
-    
-    // Update zombies
-    for (const zombie of zombies) {
-        zombie.update(delta);
-        
-        // Check if zombie can attack player
-        if (zombie.canAttack(character)) {
-            // In a real game, you'd implement damage to the player here
-            console.log('Zombie attacking player!');
-        }
     }
 
     // Update combat system
