@@ -9,11 +9,16 @@ export function getAssetPath(path) {
         // Remove any 'models/' prefix to avoid duplication
         path = path.replace(/^models\//, '');
         
-        // Check if it's a character model
-        if (path.includes('Astronaut.glb')) {
+        // Check for special cases
+        if (path.includes('Astronaut') && !path.includes('character/')) {
             return `/models/character/${path}`;
         }
         
+        if (path === 'VendingMachine.glb') {
+            return `/models/props/Vending Machine.glb`;
+        }
+        
+        // For all other models
         return `/models/${path}`;
     }
     
