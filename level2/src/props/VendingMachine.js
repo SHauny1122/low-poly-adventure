@@ -15,7 +15,7 @@ export class VendingMachine {
             console.log('Loading Vending Machine...');
             
             loader.load(
-                getAssetPath('models/props/Vending Machine.glb'),
+                getAssetPath('models/VendingMachine.glb'),
                 (gltf) => {
                     this.model = gltf.scene;
                     this.group.add(this.model);
