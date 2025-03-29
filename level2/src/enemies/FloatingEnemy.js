@@ -2,25 +2,18 @@ import * as THREE from 'three';
 
 export class FloatingEnemy {
     constructor(position) {
-        // Create a blue glowing sphere
-        this.geometry = new THREE.SphereGeometry(1, 16, 16);
-        this.material = new THREE.MeshStandardMaterial({
+        // Create a blue glowing sphere with reduced geometry complexity
+        this.geometry = new THREE.SphereGeometry(1, 8, 8); // Reduced segments from 16 to 8
+        this.material = new THREE.MeshBasicMaterial({ // Changed from MeshStandardMaterial to MeshBasicMaterial
             color: 0x0088ff,
-            emissive: 0x0044ff,
-            emissiveIntensity: 1.5,
             transparent: true,
             opacity: 0.8
         });
         this.mesh = new THREE.Mesh(this.geometry, this.material);
         
-        // Add a point light to make it glow
-        this.light = new THREE.PointLight(0x0088ff, 1, 10);
-        this.light.position.set(0, 0, 0);
-        
         // Create group
         this.group = new THREE.Group();
         this.group.add(this.mesh);
-        this.group.add(this.light);
         
         // Set position
         if (position) {
@@ -64,10 +57,9 @@ export class FloatingEnemy {
         this.group.rotation.x = Math.sin(this.time * 0.5) * 0.1;
         this.group.rotation.z = Math.cos(this.time * 0.7) * 0.1;
         
-        // Pulse the glow
-        const pulseIntensity = 1 + Math.sin(this.time * 3) * 0.3;
-        this.light.intensity = pulseIntensity;
-        this.material.emissiveIntensity = pulseIntensity;
+        // Pulse the color
+        const pulseValue = 0.5 + Math.abs(Math.sin(this.time * 3)) * 0.5;
+        this.material.color.setRGB(pulseValue * 0.0, pulseValue * 0.5, pulseValue);
         
         // Update bounding sphere for collision detection
         this.boundingSphere.center.copy(this.group.position);
@@ -97,10 +89,7 @@ export class FloatingEnemy {
         this.mesh.scale.set(1, 1, 1);
         
         // Change color to more intense blue
-        this.material.emissive.set(0x00ffff);
-        this.material.emissiveIntensity = 3;
-        this.light.color.set(0x00ffff);
-        this.light.intensity = 3;
+        this.material.color.set(0x00ffff);
     }
     
     updateExplosion(delta) {
@@ -114,7 +103,6 @@ export class FloatingEnemy {
             // Fade out
             const opacity = 1 - (this.explosionTime / this.explosionDuration);
             this.material.opacity = opacity;
-            this.light.intensity = 3 * opacity;
         } else {
             this.isDead = true;
             return false;

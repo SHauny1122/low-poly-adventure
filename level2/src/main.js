@@ -38,7 +38,8 @@ const CAMERA_DISTANCE = 10.2; // Reduced by 15% from 12
 
 // Enemy spawning variables
 let enemySpawnTimer = 0;
-const ENEMY_SPAWN_INTERVAL = 2; // Spawn a new enemy every 2 seconds
+const ENEMY_SPAWN_INTERVAL = 5; // Increased from 2 to 5 seconds between spawns
+const MAX_ENEMIES = 5; // Limit the maximum number of enemies to 5 at a time
 
 // Movement variables
 const velocity = new THREE.Vector3();
@@ -410,7 +411,7 @@ function animate() {
     
     // Spawn new floating enemies
     enemySpawnTimer += delta;
-    if (enemySpawnTimer >= ENEMY_SPAWN_INTERVAL) {
+    if (enemySpawnTimer >= ENEMY_SPAWN_INTERVAL && floatingEnemies.length < MAX_ENEMIES) {
         spawnFloatingEnemy();
         enemySpawnTimer = 0;
     }
