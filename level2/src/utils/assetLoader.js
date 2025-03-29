@@ -8,7 +8,13 @@ export function getAssetPath(path) {
     if (window.location.hostname !== 'localhost') {
         // Remove any 'models/' prefix to avoid duplication
         path = path.replace(/^models\//, '');
-        return `/models/${path}`; // Removed 'level2/' prefix since files are served from public/models
+        
+        // Check if it's a character model
+        if (path.includes('Astronaut.glb')) {
+            return `/models/character/${path}`;
+        }
+        
+        return `/models/${path}`;
     }
     
     // For local development
