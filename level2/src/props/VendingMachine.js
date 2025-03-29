@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { getAssetPath } from '../utils/assetLoader';
 
 export class VendingMachine {
     constructor() {
@@ -14,7 +15,7 @@ export class VendingMachine {
             console.log('Loading Vending Machine...');
             
             loader.load(
-                '/level2/public/models/props/Vending Machine.glb',
+                getAssetPath('models/props/Vending Machine.glb'),
                 (gltf) => {
                     this.model = gltf.scene;
                     this.group.add(this.model);

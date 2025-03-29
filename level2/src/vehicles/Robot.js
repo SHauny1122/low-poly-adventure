@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { getAssetPath } from '../utils/assetLoader';
 
 export class Robot {
     constructor() {
@@ -26,7 +27,7 @@ export class Robot {
     async load() {
         return new Promise((resolve, reject) => {
             const loader = new GLTFLoader();
-            const modelPath = '/level2/models/robot.glb';  
+            const modelPath = getAssetPath('models/robot.glb');  
             console.log('Loading Robot from:', modelPath);
             
             loader.load(

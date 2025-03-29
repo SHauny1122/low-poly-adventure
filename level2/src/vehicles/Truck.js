@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { getAssetPath } from '../utils/assetLoader';
 
 export class Truck {
     constructor() {
@@ -13,7 +14,7 @@ export class Truck {
             const loader = new GLTFLoader();
             
             // Try to load from the correct path
-            const modelPath = '/models/Truck.glb';  
+            const modelPath = getAssetPath('models/Truck.glb');  
             console.log('Loading Truck from:', modelPath);
             
             loader.load(

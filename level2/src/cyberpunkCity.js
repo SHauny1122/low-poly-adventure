@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { getAssetPath } from './utils/assetLoader';
 
 export class CyberpunkCity {
     constructor() {
@@ -55,7 +56,7 @@ export class CyberpunkCity {
         const animations = {};
         
         // Load walk animation
-        loader.load('/level2/public/models/Zombiewalk.glb', (gltf) => {
+        loader.load(getAssetPath('models/Zombiewalk.glb'), (gltf) => {
             console.log('Zombie model loaded');
             
             // Set up the zombie
@@ -78,13 +79,13 @@ export class CyberpunkCity {
             this.startAnimationLoop();
 
             // Load hit reaction animation
-            loader.load('/level2/public/models/Zombiehitreaction.glb', (gltf) => {
+            loader.load(getAssetPath('models/Zombiehitreaction.glb'), (gltf) => {
                 this.zombieState.animations.hit = gltf.animations[0];
                 console.log('Hit animation loaded');
             });
 
             // Load death animation
-            loader.load('/level2/public/models/Zombiedead.glb', (gltf) => {
+            loader.load(getAssetPath('models/Zombiedead.glb'), (gltf) => {
                 this.zombieState.animations.death = gltf.animations[0];
                 console.log('Death animation loaded and ready');
             });
@@ -632,7 +633,7 @@ export class CyberpunkCity {
         const loader = new GLTFLoader();
         
         // Use absolute path with level2 prefix
-        const modelPath = '/level2/public/models/Zombiewalk.glb';
+        const modelPath = getAssetPath('models/Zombiewalk.glb');
         
         loader.load(modelPath, (gltf) => {
             console.log('Spawning new zombie');
@@ -655,11 +656,11 @@ export class CyberpunkCity {
             };
             
             // Load hit and death animations
-            loader.load('/level2/public/models/Zombiehitreaction.glb', (hitGltf) => {
+            loader.load(getAssetPath('models/Zombiehitreaction.glb'), (hitGltf) => {
                 animations.hit = hitGltf.animations[0];
             });
             
-            loader.load('/level2/public/models/Zombiedead.glb', (deadGltf) => {
+            loader.load(getAssetPath('models/Zombiedead.glb'), (deadGltf) => {
                 animations.death = deadGltf.animations[0];
             });
             
