@@ -11,6 +11,7 @@ import { VendingMachine } from './props/VendingMachine';
 import nipplejs from 'nipplejs';
 import { AudioManager } from './audio/AudioManager';
 import { CombatSystem } from './combat/CombatSystem';
+import { FloatingEnemy } from './enemies/FloatingEnemy';
 
 let scene, camera, renderer;
 let character;
@@ -22,6 +23,7 @@ let truck;
 let drones = []; // Array to hold multiple drones
 let robots = []; // Array to hold multiple robots
 let vendingMachines = []; // Array to store vending machines
+let floatingEnemies = []; // Array to store floating enemies
 let joystick = null;
 let audioManager;
 let combatSystem;  
@@ -33,6 +35,10 @@ const ROTATION_SPEED = Math.PI * 1.0;
 const ROTATION_SMOOTHING = 0.15;
 const CAMERA_HEIGHT = 5;
 const CAMERA_DISTANCE = 10.2; // Reduced by 15% from 12
+
+// Enemy spawning variables
+let enemySpawnTimer = 0;
+const ENEMY_SPAWN_INTERVAL = 2; // Spawn a new enemy every 2 seconds
 
 // Movement variables
 const velocity = new THREE.Vector3();
@@ -233,6 +239,29 @@ async function init() {
 
         // Initialize combat system
         combatSystem = new CombatSystem(scene, camera, character);
+        
+        // Add shot handler to the scene
+        scene.onShot = (crosshairPosition) => {
+            // Create a raycaster from the camera
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(crosshairPosition, combatSystem.isInCombatMode ? combatSystem.combatCamera : camera);
+            
+            // Check for intersections with floating enemies
+            let hit = false;
+            for (const enemy of floatingEnemies) {
+                if (!enemy.isDead && !enemy.isExploding) {
+                    // Check if ray intersects enemy's bounding sphere
+                    if (raycaster.ray.intersectsSphere(enemy.boundingSphere)) {
+                        enemy.hit();
+                        hit = true;
+                        console.log("Hit enemy!");
+                        break;
+                    }
+                }
+            }
+            
+            return hit;
+        };
 
         // Setup keyboard controls
         document.addEventListener('keydown', onKeyDown);
@@ -378,6 +407,26 @@ function animate() {
     for (const robot of robots) {
         robot.update(delta);
     }
+    
+    // Spawn new floating enemies
+    enemySpawnTimer += delta;
+    if (enemySpawnTimer >= ENEMY_SPAWN_INTERVAL) {
+        spawnFloatingEnemy();
+        enemySpawnTimer = 0;
+    }
+    
+    // Update floating enemies
+    for (let i = floatingEnemies.length - 1; i >= 0; i--) {
+        const enemy = floatingEnemies[i];
+        const alive = enemy.update(delta);
+        
+        if (!alive) {
+            // Remove dead enemy
+            scene.remove(enemy.group);
+            enemy.dispose();
+            floatingEnemies.splice(i, 1);
+        }
+    }
 
     // Update combat system
     combatSystem.update();
@@ -388,6 +437,22 @@ function animate() {
     } else {
         renderer.render(scene, combatSystem.combatCamera);
     }
+}
+
+// Function to spawn a new floating enemy
+function spawnFloatingEnemy() {
+    // Spawn enemy at a random position on the street
+    const x = (Math.random() * 10) - 5; // Random position across the street (-5 to 5)
+    const y = 2 + (Math.random() * 3); // Random height between 2-5 units
+    const z = -50; // Far down the street
+    
+    const position = new THREE.Vector3(x, y, z);
+    const enemy = new FloatingEnemy(position);
+    
+    scene.add(enemy.group);
+    floatingEnemies.push(enemy);
+    
+    console.log("Spawned new floating enemy at", x.toFixed(2), y.toFixed(2), z.toFixed(2));
 }
 
 // Make camera available globally for frustum culling
