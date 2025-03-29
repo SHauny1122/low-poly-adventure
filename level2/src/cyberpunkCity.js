@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { getAssetPath } from './utils/assetLoader';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { getAssetPath } from './utils/assetLoader.js';
 
 export class CyberpunkCity {
     constructor() {
@@ -9,212 +9,56 @@ export class CyberpunkCity {
         this.buildingInstances = []; // Store building instances for culling
         this.lightInstances = []; // Store light instances for culling
         this.mixer = null;
-        this.zombie = null;
-        this.zombieDirection = 1;
+        this.astronaut = null;
         this.clock = new THREE.Clock();
         
-        // Zombie spawning system
-        this.zombieSpawnSystem = {
-            maxZombies: 5,
-            activeZombies: 0,
-            spawnRadius: { min: 50, max: 100 }, // Min and max distance from player
-            nextSpawnTime: 0,
-            spawnDelay: 5000, // 5 seconds between spawns
-        };
-
-        this.zombieState = {
-            health: 3,
-            isHit: false,
-            isDead: false,
-            currentAction: null,
-            animations: {}
-        };
-        this.raycaster = new THREE.Raycaster();
-
-        // Register shot handler with both window.scene and scene
-        const shotHandler = (crosshairPosition) => {
-            console.log('Shot detected, checking zombie hit...');
-            return this.handleShot(crosshairPosition);
-        };
-
-        if (window.scene) {
-            window.scene.onShot = shotHandler;
-        }
-
-        this.group.onShot = shotHandler;
-
         this.createStreet();
         this.createBuildings();
         this.createStreetLights();
-        
-        // Start zombie spawning system after a short delay to let everything load
-        setTimeout(() => this.startZombieSpawning(), 2000);
+        this.loadAstronaut();
     }
 
-    loadZombieAnimations() {
+    loadAstronaut() {
         const loader = new GLTFLoader();
-        const animations = {};
+        const modelPath = getAssetPath('Astronaut.glb');
         
-        // Load walk animation
-        loader.load(getAssetPath('Zombiewalk.glb'), (gltf) => {
-            console.log('Zombie model loaded');
+        loader.load(modelPath, (gltf) => {
+            console.log('Astronaut model loaded');
             
-            // Set up the zombie
-            this.zombie = gltf.scene;
-            this.zombie.scale.set(0.7, 0.7, 0.7);
-            this.zombie.position.set(-3, 0, -200);
-            this.zombie.rotation.y = 0;
+            // Set up the astronaut
+            this.astronaut = gltf.scene;
+            this.astronaut.scale.set(0.7, 0.7, 0.7);
+            this.astronaut.position.set(0, 0, 0);
             
-            // Store walk animation
-            this.zombieState.animations.walk = gltf.animations.find(a => a.name === 'Armature|Walk');
-            console.log('Walk animation loaded');
+            // Add to scene
+            this.group.add(this.astronaut);
             
-            // Set up the mixer
-            this.mixer = new THREE.AnimationMixer(this.zombie);
+            // Set up animation mixer
+            this.mixer = new THREE.AnimationMixer(this.astronaut);
+            this.animations = {
+                idle: gltf.animations[0]
+            };
             
-            // Start walking
-            this.playAnimation('walk');
+            // Start idle animation
+            const idleAction = this.mixer.clipAction(this.animations.idle);
+            idleAction.play();
             
-            this.group.add(this.zombie);
+            // Start animation loop
             this.startAnimationLoop();
-
-            // Load hit reaction animation
-            loader.load(getAssetPath('Zombiehitreaction.glb'), (gltf) => {
-                this.zombieState.animations.hit = gltf.animations[0];
-                console.log('Hit animation loaded');
-            });
-
-            // Load death animation
-            loader.load(getAssetPath('Zombiedead.glb'), (gltf) => {
-                this.zombieState.animations.death = gltf.animations[0];
-                console.log('Death animation loaded and ready');
-            });
         });
     }
-
-    playAnimation(animationName, loop = true) {
-        if (this.zombieState.currentAction) {
-            this.zombieState.currentAction.stop();
-        }
-
-        if (this.zombieState.animations[animationName] && this.mixer) {
-            console.log('Playing animation:', animationName);
-            const action = this.mixer.clipAction(this.zombieState.animations[animationName]);
-            if (!loop) {
-                action.setLoop(THREE.LoopOnce);
-                action.clampWhenFinished = true;
-            }
-            action.play();
-            this.zombieState.currentAction = action;
-        } else {
-            console.log('Animation not found:', animationName, 'Available animations:', Object.keys(this.zombieState.animations));
-        }
-    }
-
-    handleShot(crosshairPosition) {
-        if (!window.combatCamera) {
-            console.log('No combat camera found!');
-            return false;
-        }
-
-        this.raycaster.setFromCamera(crosshairPosition, window.combatCamera);
-        
-        // Check all zombies for hits
-        const zombies = this.group.children.filter(child => child.userData && child.userData.state);
-        
-        for (const zombie of zombies) {
-            const state = zombie.userData.state;
-            
-            // Skip dead or already hit zombies
-            if (state.isDead || state.isHit) continue;
-            
-            const intersects = this.raycaster.intersectObject(zombie, true);
-            
-            if (intersects.length > 0) {
-                console.log('Zombie hit! Health:', state.health);
-                state.health--;
-                state.isHit = true;
-                
-                if (state.health <= 0) {
-                    console.log('Zombie killed!');
-                    state.isDead = true;
-                    
-                    if (state.currentAction) {
-                        state.currentAction.stop();
-                    }
-                    
-                    // Play death animation
-                    if (state.animations.death && state.mixer) {
-                        const deathAction = state.mixer.clipAction(state.animations.death);
-                        deathAction.setLoop(THREE.LoopOnce);
-                        deathAction.clampWhenFinished = true;
-                        deathAction.play();
-                        state.currentAction = deathAction;
-                        
-                        // Remove zombie after animation
-                        setTimeout(() => {
-                            this.group.remove(zombie);
-                            this.zombieSpawnSystem.activeZombies--;
-                            console.log('Zombie removed, remaining:', this.zombieSpawnSystem.activeZombies);
-                        }, 3000);
-                    }
-                } else {
-                    // Play hit animation
-                    if (state.animations.hit && state.mixer) {
-                        const hitAction = state.mixer.clipAction(state.animations.hit);
-                        hitAction.setLoop(THREE.LoopOnce);
-                        hitAction.clampWhenFinished = true;
-                        hitAction.play();
-                        state.currentAction = hitAction;
-                        
-                        // Resume walking after hit
-                        setTimeout(() => {
-                            state.isHit = false;
-                            if (!state.isDead && state.animations.walk) {
-                                const walkAction = state.mixer.clipAction(state.animations.walk);
-                                walkAction.play();
-                                state.currentAction = walkAction;
-                            }
-                        }, 1000);
-                    }
-                }
-                return true;
-            }
-        }
-        return false;
-    }
-
+    
     startAnimationLoop() {
-        const animate = () => {
-            requestAnimationFrame(animate);
-            
-            if (this.mixer && this.zombie) {
-                const delta = this.clock.getDelta();
-                
-                // Update animation
-                this.mixer.update(delta);
-                
-                // Only move if not being hit or dead
-                if (!this.zombieState.isHit && !this.zombieState.isDead) {
-                    // Move zombie
-                    const speed = 2;
-                    this.zombie.position.z += this.zombieDirection * speed * delta;
-                    
-                    // Check boundaries and turn around
-                    if (this.zombie.position.z > 250) {
-                        this.zombieDirection = -1;
-                        this.zombie.rotation.y = Math.PI;
-                    } else if (this.zombie.position.z < -250) {
-                        this.zombieDirection = 1;
-                        this.zombie.rotation.y = 0;
-                    }
-                }
-            }
-        };
+        // Update animations
+        const delta = this.clock.getDelta();
+        if (this.mixer) {
+            this.mixer.update(delta);
+        }
         
-        animate();
+        // Request next frame
+        requestAnimationFrame(() => this.startAnimationLoop());
     }
-
+    
     createStreet() {
         // Create road - make it even longer
         const roadGeometry = new THREE.PlaneGeometry(20, 600); // Doubled length to 600
@@ -552,144 +396,6 @@ export class CyberpunkCity {
             0xff00ff  // Purple
         ];
         return colors[Math.floor(Math.random() * colors.length)];
-    }
-
-    getRandomSpawnPosition(playerPosition) {
-        // Street boundaries
-        const streetBounds = {
-            minX: -5,  // Left side of street
-            maxX: 5,   // Right side of street
-            minZ: -250, // Start of street
-            maxZ: 250   // End of street
-        };
-
-        // Get random X position within street width
-        const x = Math.random() * (streetBounds.maxX - streetBounds.minX) + streetBounds.minX;
-        
-        // Get random Z position ahead or behind player
-        let z;
-        const spawnDistance = this.zombieSpawnSystem.spawnRadius.min + 
-            Math.random() * (this.zombieSpawnSystem.spawnRadius.max - this.zombieSpawnSystem.spawnRadius.min);
-            
-        // 50% chance to spawn ahead or behind
-        if (Math.random() < 0.5) {
-            z = playerPosition.z + spawnDistance;
-        } else {
-            z = playerPosition.z - spawnDistance;
-        }
-        
-        // Clamp Z position to street bounds
-        z = Math.max(streetBounds.minZ, Math.min(streetBounds.maxZ, z));
-        
-        console.log('Street-aligned spawn position:', { x, z });
-        return { x, z };
-    }
-
-    startZombieSpawning() {
-        console.log('Starting zombie spawning system...');
-        const checkSpawning = () => {
-            requestAnimationFrame(checkSpawning);
-            
-            // Get player position from character if available
-            const playerPosition = window.character ? window.character.group.position : new THREE.Vector3(0, 0, 0);
-            
-            const now = Date.now();
-            
-            // Check if it's time to spawn and we have room for more zombies
-            if (now > this.zombieSpawnSystem.nextSpawnTime && 
-                this.zombieSpawnSystem.activeZombies < this.zombieSpawnSystem.maxZombies) {
-                
-                this.spawnZombie(playerPosition);
-                
-                // Set next spawn time
-                this.zombieSpawnSystem.nextSpawnTime = now + this.zombieSpawnSystem.spawnDelay;
-            }
-            
-            // Update all zombie mixers
-            const delta = this.clock.getDelta();
-            this.group.children.forEach(child => {
-                if (child.userData && child.userData.state && child.userData.state.mixer) {
-                    child.userData.state.mixer.update(delta);
-                }
-            });
-        };
-        
-        // Start with one zombie
-        this.spawnZombie(new THREE.Vector3(0, 0, 0));
-        this.zombieSpawnSystem.nextSpawnTime = Date.now() + this.zombieSpawnSystem.spawnDelay;
-        
-        checkSpawning();
-    }
-
-    spawnZombie(position) {
-        if (this.zombieSpawnSystem.activeZombies >= this.zombieSpawnSystem.maxZombies) {
-            return;
-        }
-
-        const spawnPos = this.getRandomSpawnPosition(position);
-        console.log('Spawning zombie at:', spawnPos);
-        
-        // Load zombie with animations
-        const loader = new GLTFLoader();
-        
-        // Update paths to work with assetLoader in both dev and prod
-        const modelPath = getAssetPath('Zombiewalk.glb');
-        console.log('Loading zombie from:', modelPath);
-        
-        loader.load(modelPath, (gltf) => {
-            console.log('Spawning new zombie');
-            
-            const zombie = gltf.scene;
-            zombie.scale.set(0.7, 0.7, 0.7);
-            zombie.position.set(spawnPos.x, 0, spawnPos.z);
-            
-            // Make zombie face the player
-            const angle = Math.atan2(
-                position.x - spawnPos.x,
-                position.z - spawnPos.z
-            );
-            zombie.rotation.y = angle;
-            
-            // Set up animations
-            const mixer = new THREE.AnimationMixer(zombie);
-            const animations = {
-                walk: gltf.animations.find(a => a.name === 'Armature|Walk')
-            };
-            
-            // Load hit and death animations with correct paths
-            loader.load(getAssetPath('Zombiehitreaction.glb'), (hitGltf) => {
-                animations.hit = hitGltf.animations[0];
-                console.log('Hit animation loaded');
-            });
-            
-            loader.load(getAssetPath('Zombiedead.glb'), (deadGltf) => {
-                animations.death = deadGltf.animations[0];
-                console.log('Death animation loaded');
-            });
-            
-            // Create zombie state
-            const zombieState = {
-                health: 3,
-                isHit: false,
-                isDead: false,
-                currentAction: null,
-                animations: animations,
-                mixer: mixer
-            };
-            
-            // Store state on zombie object
-            zombie.userData.state = zombieState;
-            
-            // Start walking animation
-            const walkAction = mixer.clipAction(animations.walk);
-            walkAction.play();
-            zombieState.currentAction = walkAction;
-            
-            this.group.add(zombie);
-            this.zombieSpawnSystem.activeZombies++;
-            
-            console.log('New zombie spawned, total:', this.zombieSpawnSystem.activeZombies);
-        });
     }
 
     update(delta) {
