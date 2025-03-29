@@ -6,9 +6,6 @@ export function getAssetPath(path) {
     
     // For production (Vercel)
     if (window.location.hostname !== 'localhost') {
-        // Remove any 'models/' prefix to avoid duplication
-        path = path.replace(/^models\//, '');
-        
         // Check for special cases
         if (path.includes('Astronaut') && !path.includes('character/')) {
             return `/models/character/${path}`;
@@ -16,6 +13,11 @@ export function getAssetPath(path) {
         
         if (path === 'VendingMachine.glb') {
             return `/models/props/Vending Machine.glb`;
+        }
+        
+        // For zombie models, they're already in the models directory
+        if (path.startsWith('Zombie')) {
+            return `/models/${path}`;
         }
         
         // For all other models
