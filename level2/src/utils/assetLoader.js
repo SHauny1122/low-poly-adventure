@@ -5,11 +5,7 @@ export function getAssetPath(path) {
     // Remove any leading slashes
     path = path.replace(/^\/+/, '');
     
-    // Add public prefix if not already present
-    if (!path.startsWith('public/')) {
-        path = `public/${path}`;
-    }
-    
-    // Add level2 prefix for production
-    return `/level2/${path}`;
+    // For production, we want /level2/models/...
+    // For local dev, we want /models/...
+    return `${BASE_PATH}/${path}`;
 }
