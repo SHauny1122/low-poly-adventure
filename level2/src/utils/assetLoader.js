@@ -6,8 +6,12 @@ export function getAssetPath(path) {
     
     // For production (Vercel)
     if (window.location.hostname !== 'localhost') {
-        // Ensure we don't double up the base URL
-        return `/models/${path.replace('models/', '')}`;
+        // Keep the full path structure for subdirectories
+        if (path.includes('character/') || path.includes('props/')) {
+            return `/models/${path}`;
+        }
+        // For top-level models, just use the filename
+        return `/models/${path.split('/').pop()}`;
     }
     
     // For local development
