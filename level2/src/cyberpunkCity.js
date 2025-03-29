@@ -622,71 +622,9 @@ export class CyberpunkCity {
     }
 
     spawnZombie(position) {
-        if (this.zombieSpawnSystem.activeZombies >= this.zombieSpawnSystem.maxZombies) {
-            return;
-        }
-
-        const spawnPos = this.getRandomSpawnPosition(position);
-        console.log('Spawning zombie at:', spawnPos);
-        
-        // Load zombie with animations
-        const loader = new GLTFLoader();
-        
-        // Use absolute path with level2 prefix
-        const modelPath = getAssetPath('models/Zombiewalk.glb');
-        
-        loader.load(modelPath, (gltf) => {
-            console.log('Spawning new zombie');
-            
-            const zombie = gltf.scene;
-            zombie.scale.set(0.7, 0.7, 0.7);
-            zombie.position.set(spawnPos.x, 0, spawnPos.z);
-            
-            // Make zombie face the player
-            const angle = Math.atan2(
-                position.x - spawnPos.x,
-                position.z - spawnPos.z
-            );
-            zombie.rotation.y = angle;
-            
-            // Set up animations
-            const mixer = new THREE.AnimationMixer(zombie);
-            const animations = {
-                walk: gltf.animations.find(a => a.name === 'Armature|Walk')
-            };
-            
-            // Load hit and death animations
-            loader.load(getAssetPath('models/Zombiehitreaction.glb'), (hitGltf) => {
-                animations.hit = hitGltf.animations[0];
-            });
-            
-            loader.load(getAssetPath('models/Zombiedead.glb'), (deadGltf) => {
-                animations.death = deadGltf.animations[0];
-            });
-            
-            // Create zombie state
-            const zombieState = {
-                health: 3,
-                isHit: false,
-                isDead: false,
-                currentAction: null,
-                animations: animations,
-                mixer: mixer
-            };
-            
-            // Store state on zombie object
-            zombie.userData.state = zombieState;
-            
-            // Start walking animation
-            const walkAction = mixer.clipAction(animations.walk);
-            walkAction.play();
-            zombieState.currentAction = walkAction;
-            
-            this.group.add(zombie);
-            this.zombieSpawnSystem.activeZombies++;
-            
-            console.log('New zombie spawned, total:', this.zombieSpawnSystem.activeZombies);
-        });
+        // Temporarily disable zombie spawning until we fix the model loading
+        console.log('Zombie spawning temporarily disabled');
+        return;
     }
 
     update(delta) {
