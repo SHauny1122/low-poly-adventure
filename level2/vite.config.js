@@ -1,5 +1,14 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
+import fs from 'fs-extra';
+
+// Copy models to dist during build
+const copyModels = () => ({
+    name: 'copy-models',
+    closeBundle: async () => {
+        await fs.copy('static/models', 'dist/models');
+    }
+});
 
 export default defineConfig({
     base: '/level2/',
@@ -16,5 +25,6 @@ export default defineConfig({
             }
         }
     },
+    plugins: [copyModels()],
     publicDir: 'public'
 });
