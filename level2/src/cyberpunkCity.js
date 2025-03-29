@@ -8,14 +8,11 @@ export class CyberpunkCity {
         this.colliders = []; // Array to store building colliders
         this.buildingInstances = []; // Store building instances for culling
         this.lightInstances = []; // Store light instances for culling
-        this.mixer = null;
-        this.astronaut = null;
         this.clock = new THREE.Clock();
         
         this.createStreet();
         this.createBuildings();
         this.createStreetLights();
-        this.loadAstronaut();
     }
 
     createStreet() {
@@ -334,54 +331,17 @@ export class CyberpunkCity {
         this.lightInstances.push(light);
     }
 
-    loadAstronaut() {
-        const loader = new GLTFLoader();
-        loader.load('/models/character/Astronaut.glb', (gltf) => {
-            console.log('Astronaut model loaded');
-            
-            // Set up the astronaut
-            this.astronaut = gltf.scene;
-            this.astronaut.scale.set(0.7, 0.7, 0.7);
-            this.astronaut.position.set(0, 0, 0);
-            
-            // Add to scene
-            this.group.add(this.astronaut);
-            
-            // Set up animation mixer
-            this.mixer = new THREE.AnimationMixer(this.astronaut);
-            this.animations = {
-                idle: gltf.animations[0]
-            };
-            
-            // Start idle animation
-            const idleAction = this.mixer.clipAction(this.animations.idle);
-            idleAction.play();
-            
-            // Start animation loop
-            this.startAnimationLoop();
-        });
-    }
-
-    startAnimationLoop() {
-        // Update animations
-        const delta = this.clock.getDelta();
-        if (this.mixer) {
-            this.mixer.update(delta);
-        }
-        
-        // Request next frame
-        requestAnimationFrame(() => this.startAnimationLoop());
-    }
-
     // Check if a position collides with any building
     checkCollision(x, z) {
         for (const collider of this.colliders) {
-            if (x >= collider.minX && x <= collider.maxX &&
-                z >= collider.minZ && z <= collider.maxZ) {
-                return true; // Collision detected
+            const dx = Math.abs(x - collider.minX);
+            const dz = Math.abs(z - collider.minZ);
+            
+            if (dx < (collider.maxX - collider.minX) / 2 + 0.5 && dz < (collider.maxZ - collider.minZ) / 2 + 0.5) {
+                return true;
             }
         }
-        return false; // No collision
+        return false;
     }
 
     getRandomNeonColor() {
@@ -397,33 +357,33 @@ export class CyberpunkCity {
     }
 
     update(delta) {
-        // Skip frustum culling if camera is not available
+        // Update frustum culling for buildings
         if (window.camera) {
             const frustum = new THREE.Frustum();
-            frustum.setFromProjectionMatrix(
-                new THREE.Matrix4().multiplyMatrices(
-                    window.camera.projectionMatrix,
-                    window.camera.matrixWorldInverse
-                )
+            const matrix = new THREE.Matrix4().multiplyMatrices(
+                window.camera.projectionMatrix,
+                window.camera.matrixWorldInverse
             );
-
-            // Update only visible buildings
-            this.buildingInstances.forEach(building => {
-                if (frustum.containsPoint(building.position)) {
+            frustum.setFromProjectionMatrix(matrix);
+            
+            // Cull buildings
+            for (const building of this.buildingInstances) {
+                if (frustum.intersectsObject(building)) {
                     building.visible = true;
                 } else {
                     building.visible = false;
                 }
-            });
-        }
-
-        // Make windows and signs flicker occasionally
-        this.group.children.forEach(child => {
-            if (child.material && child.material.emissive) {
-                if (Math.random() < 0.01) {
-                    child.material.emissiveIntensity = 0.5 + Math.random() * 1.5;
+            }
+            
+            // Cull lights
+            for (const light of this.lightInstances) {
+                const distance = window.camera.position.distanceTo(light.position);
+                if (distance < 50) {
+                    light.visible = true;
+                } else {
+                    light.visible = false;
                 }
             }
-        });
+        }
     }
 }
