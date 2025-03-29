@@ -192,6 +192,7 @@ async function init() {
         }
         */
 
+        /*
         console.log('Starting to create vending machines...');
         // Create and position vending machines along the street
         const vendingMachinePositions = [
@@ -218,21 +219,22 @@ async function init() {
                 console.error('Failed to create vending machine:', error);
             }
         }
+        */
 
         // Create and position multiple robots
-        const robotCount = 5;
-        for (let i = 0; i < robotCount; i++) {
-            const robot = new Robot();
-            await robot.load();
-            robot.setScale(0.3); // Much smaller scale, changed from 2.0
+        // const robotCount = 5;
+        // for (let i = 0; i < robotCount; i++) {
+        //     const robot = new Robot();
+        //     await robot.load();
+        //     robot.setScale(0.3); // Much smaller scale, changed from 2.0
             
-            // Set initial position with offset
-            const startZ = -290 + ((580 / robotCount) * i); // Spread robots along street
-            robot.setPosition(4, 0, startZ); // Offset on X axis to not collide with drones
+        //     // Set initial position with offset
+        //     const startZ = -290 + ((580 / robotCount) * i); // Spread robots along street
+        //     robot.setPosition(4, 0, startZ); // Offset on X axis to not collide with drones
             
-            robots.push(robot);
-            scene.add(robot.group);
-        }
+        //     robots.push(robot);
+        //     scene.add(robot.group);
+        // }
 
         // Add lights
         const ambientLight = new THREE.AmbientLight(0x666666); // Brighter ambient light
