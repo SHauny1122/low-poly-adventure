@@ -16,12 +16,15 @@ export default defineConfig({
             },
             output: {
                 assetFileNames: (assetInfo) => {
-                    // Keep the original path for model files
+                    // Keep the original path structure for model files
                     if (assetInfo.name.endsWith('.glb')) {
-                        return 'models/[name][extname]';
+                        // Extract directory path from the full name
+                        const parts = assetInfo.name.split('/');
+                        const fileName = parts.pop();
+                        const dirPath = parts.join('/');
+                        return dirPath ? `${dirPath}/[name][extname]` : 'models/[name][extname]';
                     }
-                    // Other assets go in the assets directory
-                    return 'assets/[name].[hash][extname]';
+                    return 'assets/[name]-[hash][extname]';
                 }
             }
         }
