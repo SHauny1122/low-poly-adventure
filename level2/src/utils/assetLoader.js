@@ -2,14 +2,9 @@
 const BASE_PATH = '/level2';
 
 export function getAssetPath(path) {
-    // Remove any leading slashes
-    path = path.replace(/^\/+/, '');
+    // Remove any leading slashes and 'public' prefix if present
+    path = path.replace(/^\/+/, '').replace(/^public\//, '');
     
-    // Add public prefix if not already present
-    if (!path.startsWith('public/')) {
-        path = `public/${path}`;
-    }
-    
-    // For production, we want /level2/public/models/...
+    // For production, we want /level2/models/...
     return `${BASE_PATH}/${path}`;
 }
