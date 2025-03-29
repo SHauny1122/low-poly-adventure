@@ -8,6 +8,7 @@ import { Truck } from './vehicles/Truck';
 import { Drone } from './vehicles/Drone';
 import { Robot } from './vehicles/Robot';  
 import { VendingMachine } from './props/VendingMachine';
+import { Zombie } from './enemies/Zombie';
 import nipplejs from 'nipplejs';
 import { AudioManager } from './audio/AudioManager';
 import { CombatSystem } from './combat/CombatSystem';
@@ -22,6 +23,7 @@ let truck;
 let drones = []; // Array to hold multiple drones
 let robots = []; // Array to hold multiple robots
 let vendingMachines = []; // Array to store vending machines
+let zombies = []; // Array to store zombies
 let joystick = null;
 let audioManager;
 let combatSystem;  
@@ -236,6 +238,24 @@ async function init() {
         //     scene.add(robot.group);
         // }
 
+        // Create and position zombies along the street
+        const zombieCount = 8; // Number of zombies to create
+        for (let i = 0; i < zombieCount; i++) {
+            const zombie = new Zombie();
+            await zombie.load();
+            
+            // Set random position along the street
+            const side = Math.random() > 0.5 ? 1 : -1; // Randomly choose left or right side
+            const startZ = -250 + (Math.random() * 500); // Random position along the street
+            const xOffset = side * (Math.random() * 3 + 2); // Random offset from center
+            
+            zombie.setPosition(xOffset, 0, startZ);
+            zombie.setTarget(character); // Set player as target
+            
+            zombies.push(zombie);
+            scene.add(zombie.group);
+        }
+
         // Add lights
         const ambientLight = new THREE.AmbientLight(0x666666); // Brighter ambient light
         scene.add(ambientLight);
@@ -406,6 +426,17 @@ function animate() {
     // Update robots
     for (const robot of robots) {
         robot.update(delta);
+    }
+    
+    // Update zombies
+    for (const zombie of zombies) {
+        zombie.update(delta);
+        
+        // Check if zombie can attack player
+        if (zombie.canAttack(character)) {
+            // In a real game, you'd implement damage to the player here
+            console.log('Zombie attacking player!');
+        }
     }
 
     // Update combat system

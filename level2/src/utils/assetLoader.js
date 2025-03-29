@@ -4,11 +4,6 @@ export function getAssetPath(path) {
     // Remove any leading slash and normalize slashes
     path = path.replace(/^\/+/, '').replace(/\\/g, '/');
     
-    // For production (Vercel)
-    if (window.location.hostname !== 'localhost') {
-        return `/level2/${path}`;
-    }
-    
-    // For local development
+    // For both production (Vercel) and local development
     return `/${path}`;
 }
