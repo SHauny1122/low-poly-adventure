@@ -56,7 +56,7 @@ export class CyberpunkCity {
         const animations = {};
         
         // Load walk animation
-        loader.load(getAssetPath('models/Zombiewalk.glb'), (gltf) => {
+        loader.load(getAssetPath('Zombiewalk.glb'), (gltf) => {
             console.log('Zombie model loaded');
             
             // Set up the zombie
@@ -79,13 +79,13 @@ export class CyberpunkCity {
             this.startAnimationLoop();
 
             // Load hit reaction animation
-            loader.load(getAssetPath('models/Zombiehitreaction.glb'), (gltf) => {
+            loader.load(getAssetPath('Zombiehitreaction.glb'), (gltf) => {
                 this.zombieState.animations.hit = gltf.animations[0];
                 console.log('Hit animation loaded');
             });
 
             // Load death animation
-            loader.load(getAssetPath('models/Zombiedead.glb'), (gltf) => {
+            loader.load(getAssetPath('Zombiedead.glb'), (gltf) => {
                 this.zombieState.animations.death = gltf.animations[0];
                 console.log('Death animation loaded and ready');
             });
@@ -632,8 +632,8 @@ export class CyberpunkCity {
         // Load zombie with animations
         const loader = new GLTFLoader();
         
-        // Use absolute path with level2 prefix
-        const modelPath = getAssetPath('models/character/Zombiewalk.glb');
+        // Update paths to work with assetLoader in both dev and prod
+        const modelPath = getAssetPath('Zombiewalk.glb');
         console.log('Loading zombie from:', modelPath);
         
         loader.load(modelPath, (gltf) => {
@@ -656,13 +656,13 @@ export class CyberpunkCity {
                 walk: gltf.animations.find(a => a.name === 'Armature|Walk')
             };
             
-            // Load hit and death animations
-            loader.load(getAssetPath('models/character/Zombiehitreaction.glb'), (hitGltf) => {
+            // Load hit and death animations with correct paths
+            loader.load(getAssetPath('Zombiehitreaction.glb'), (hitGltf) => {
                 animations.hit = hitGltf.animations[0];
                 console.log('Hit animation loaded');
             });
             
-            loader.load(getAssetPath('models/character/Zombiedead.glb'), (deadGltf) => {
+            loader.load(getAssetPath('Zombiedead.glb'), (deadGltf) => {
                 animations.death = deadGltf.animations[0];
                 console.log('Death animation loaded');
             });
