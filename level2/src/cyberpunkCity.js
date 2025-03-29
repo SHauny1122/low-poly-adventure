@@ -336,7 +336,7 @@ export class CyberpunkCity {
 
     loadAstronaut() {
         const loader = new GLTFLoader();
-        loader.load('models/character/Astronaut.glb', (gltf) => {
+        loader.load('/level2/static/models/character/Astronaut.glb', (gltf) => {
             console.log('Astronaut model loaded');
             
             // Set up the astronaut
