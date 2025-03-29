@@ -153,43 +153,44 @@ async function init() {
         portal.group.scale.set(2, 2, 2); // Make portal twice as big
         scene.add(portal.group);
 
+        // Temporarily disable vehicle loading
+        /*
         // Create and position DeLorean
         delorean = new DeLorean();
         await delorean.load();
-        delorean.setPosition(5, 1, -15); // Raised Y position to be level with road
-        delorean.setRotation(0, Math.PI * 0.139, 0); // Rotated 25 degrees (original 60 - 35)
+        delorean.setPosition(5, 1, -15);
+        delorean.setRotation(0, Math.PI * 0.139, 0);
         delorean.setScale(1);
         scene.add(delorean.group);
 
         // Create and position Truck
         truck = new Truck();
         await truck.load();
-        truck.setPosition(-5, 1, 20); // Keep same position
-        truck.setRotation(0, Math.PI * 0.5, 0); // Rotated 90 degrees to face along the street
-        truck.setScale(10.5); // Increased by 5% (10 * 1.05)
+        truck.setPosition(-5, 1, 20);
+        truck.setRotation(0, Math.PI * 0.5, 0);
+        truck.setScale(10.5);
         scene.add(truck.group);
 
         // Create and position drones
         const NUM_DRONES = 5;
-        const STREET_LENGTH = 580; // Total patrol length
-        const DRONE_SPACING = STREET_LENGTH / NUM_DRONES; // Space them evenly
+        const STREET_LENGTH = 580;
+        const DRONE_SPACING = STREET_LENGTH / NUM_DRONES;
 
         for (let i = 0; i < NUM_DRONES; i++) {
             const drone = new Drone();
             await drone.load();
             
-            // Position drones evenly along the street with slight variations
             const startZ = -290 + (i * DRONE_SPACING);
-            const height = 8 + (Math.random() * 2 - 1); // Height varies between 7-9
+            const height = 8 + (Math.random() * 2 - 1);
             drone.setPosition(0, height, startZ);
             drone.setScale(0.8);
 
-            // Give each drone a slightly different speed
-            drone.speed = 0.200 + (Math.random() * 0.04 - 0.02); // Speed varies ±0.02
+            drone.speed = 0.200 + (Math.random() * 0.04 - 0.02);
             
             scene.add(drone.group);
             drones.push(drone);
         }
+        */
 
         console.log('Starting to create vending machines...');
         // Create and position vending machines along the street
