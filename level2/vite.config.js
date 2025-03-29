@@ -16,9 +16,11 @@ export default defineConfig({
             },
             output: {
                 assetFileNames: (assetInfo) => {
-                    // Keep original paths for model files
+                    // Keep model files in their original structure
                     if (assetInfo.name.endsWith('.glb')) {
-                        return `models/${assetInfo.name}`;
+                        // Remove 'public/' from the path if it exists
+                        const path = assetInfo.name.replace('public/', '');
+                        return path;
                     }
                     return 'assets/[name]-[hash][extname]';
                 }
