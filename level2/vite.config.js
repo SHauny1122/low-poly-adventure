@@ -16,7 +16,7 @@ export default defineConfig({
             },
             output: {
                 assetFileNames: (assetInfo) => {
-                    // Keep models in their original paths
+                    // Keep original paths for model files
                     if (assetInfo.name.endsWith('.glb')) {
                         return assetInfo.name;
                     }

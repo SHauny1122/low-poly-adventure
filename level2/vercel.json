@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/level2/models/(.*)", "destination": "/models/$1" }
+  ]
+}
