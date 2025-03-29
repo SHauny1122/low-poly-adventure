@@ -9,23 +9,10 @@ export default defineConfig({
     },
     build: {
         outDir: 'dist',
-        assetsDir: 'assets',
+        assetsDir: '',  
         rollupOptions: {
             input: {
                 main: resolve(__dirname, 'index.html')
-            },
-            output: {
-                assetFileNames: (assetInfo) => {
-                    // Keep the original path structure for model files
-                    if (assetInfo.name.endsWith('.glb')) {
-                        // Extract directory path from the full name
-                        const parts = assetInfo.name.split('/');
-                        const fileName = parts.pop();
-                        const dirPath = parts.join('/');
-                        return dirPath ? `${dirPath}/[name][extname]` : 'models/[name][extname]';
-                    }
-                    return 'assets/[name]-[hash][extname]';
-                }
             }
         }
     },
