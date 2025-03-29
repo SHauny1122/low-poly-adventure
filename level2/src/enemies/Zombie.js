@@ -42,7 +42,7 @@ export class Zombie {
         const loader = new GLTFLoader();
         
         // Load the animated zombie model
-        loader.load('/models/character/Animated Zombie.glb', (gltf) => {
+        loader.load('/models/character/AnimatedZombie.glb', (gltf) => {
             const model = gltf.scene;
             model.scale.set(0.8, 0.8, 0.8); // Adjust scale as needed
             this.group.add(model);
