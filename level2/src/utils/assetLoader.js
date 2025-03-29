@@ -8,7 +8,7 @@ export function getAssetPath(path) {
     if (window.location.hostname !== 'localhost') {
         // Remove any 'models/' prefix to avoid duplication
         path = path.replace(/^models\//, '');
-        return `/models/${path}`;
+        return `/level2/models/${path}`;
     }
     
     // For local development
