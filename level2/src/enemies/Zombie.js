@@ -42,7 +42,7 @@ export class Zombie {
         const loader = new GLTFLoader();
         
         // Load the walking animation model
-        loader.load('/models/Zombiewalk.glb', (gltf) => {
+        loader.load('/models/zombies/Zombiewalk.glb', (gltf) => {
             const model = gltf.scene;
             model.scale.set(0.8, 0.8, 0.8); // Adjust scale as needed
             this.group.add(model);
@@ -55,13 +55,13 @@ export class Zombie {
             }
             
             // Load hit reaction animation
-            loader.load('/models/Zombiehitreaction.glb', (hitGltf) => {
+            loader.load('/models/zombies/Zombiehitreaction.glb', (hitGltf) => {
                 if (hitGltf.animations && hitGltf.animations.length > 0) {
                     this.animations['hit'] = hitGltf.animations[0];
                 }
                 
                 // Load death animation
-                loader.load('/models/Zombiedead.glb', (deadGltf) => {
+                loader.load('/models/zombies/Zombiedead.glb', (deadGltf) => {
                     if (deadGltf.animations && deadGltf.animations.length > 0) {
                         this.animations['dead'] = deadGltf.animations[0];
                     }
