@@ -67,24 +67,91 @@ const joystickState = {
     force: 0
 };
 
-// Create joystick container
+// Joystick and mobile controls
 const joystickContainer = document.createElement('div');
 joystickContainer.style.position = 'fixed';
-joystickContainer.style.bottom = '20px';
-joystickContainer.style.left = '20px';
-joystickContainer.style.width = '100px';
-joystickContainer.style.height = '100px';
+joystickContainer.style.bottom = '80px';
+joystickContainer.style.left = '80px';
+joystickContainer.style.width = '120px';
+joystickContainer.style.height = '120px';
+joystickContainer.style.zIndex = '1000';
 document.body.appendChild(joystickContainer);
+
+// Create mobile buttons for sprint, aim, and shoot
+const createMobileButton = (text, bottom, right, callback) => {
+    const button = document.createElement('button');
+    button.textContent = text;
+    button.style.position = 'fixed';
+    button.style.bottom = bottom;
+    button.style.right = right;
+    button.style.width = '60px';
+    button.style.height = '60px';
+    button.style.borderRadius = '50%';
+    button.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+    button.style.border = '2px solid white';
+    button.style.color = 'white';
+    button.style.fontSize = '14px';
+    button.style.fontWeight = 'bold';
+    button.style.cursor = 'pointer';
+    button.style.zIndex = '1000';
+    button.style.display = 'flex';
+    button.style.justifyContent = 'center';
+    button.style.alignItems = 'center';
+    button.style.userSelect = 'none';
+    
+    // Add touch events
+    button.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        callback(true);
+    });
+    
+    button.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        callback(false);
+    });
+    
+    document.body.appendChild(button);
+    return button;
+};
+
+// Create sprint button
+const sprintButton = createMobileButton('SPRINT', '80px', '80px', (isActive) => {
+    isSprinting = isActive;
+});
+
+// Create aim button
+const aimButton = createMobileButton('AIM', '150px', '80px', (isActive) => {
+    if (isActive) {
+        combatSystem.enterCombatMode();
+    } else {
+        combatSystem.exitCombatMode();
+    }
+});
+
+// Create shoot button
+const shootButton = createMobileButton('SHOOT', '80px', '150px', (isActive) => {
+    if (isActive) {
+        combatSystem.shoot();
+    }
+});
 
 // Initialize joystick for mobile controls
 function initJoystick() {
+    // Remove existing joystick if it exists
+    if (joystick) {
+        joystick.destroy();
+    }
+    
     const options = {
         zone: joystickContainer,
         mode: 'static',
         position: { left: '50%', bottom: '50%' },
         color: 'white',
-        size: 100
+        size: 120,
+        lockX: false,
+        lockY: false
     };
+    
     joystick = nipplejs.create(options);
 
     // Joystick event handlers
@@ -118,6 +185,20 @@ function initJoystick() {
         joystickState.right = false;
         joystickState.force = 0;
     });
+}
+
+// Function to check if we're on a mobile device
+function isMobileDevice() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+// Function to show or hide mobile controls
+function toggleMobileControls(show) {
+    const display = show ? 'flex' : 'none';
+    joystickContainer.style.display = display;
+    sprintButton.style.display = display;
+    aimButton.style.display = display;
+    shootButton.style.display = display;
 }
 
 async function init() {
@@ -279,6 +360,9 @@ async function init() {
 
         // Initialize joystick
         initJoystick();
+        
+        // Show mobile controls only on mobile devices
+        toggleMobileControls(isMobileDevice());
 
         // Start animation loop
         animate();

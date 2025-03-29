@@ -264,63 +264,80 @@ export class CombatSystem {
     async toggleCombatMode() {
         try {
             if (!this.isInCombatMode) {
-                // Enter combat mode
-                console.log('Entering combat mode');
-                
-                // Position combat camera at arms length in front of character
-                const characterPosition = this.character.group.position.clone();
-                const characterDirection = new THREE.Vector3(0, 0, 1);
-                characterDirection.applyAxisAngle(new THREE.Vector3(0, 1, 0), this.character.group.rotation.y);
-                characterDirection.multiplyScalar(1.5);
-                
-                characterPosition.y += 1.5;
-                characterPosition.add(characterDirection);
-                this.combatCamera.position.copy(characterPosition);
-                
-                // Reset rotations to match character's direction
-                this.targetRotationX = 0;
-                this.targetRotationY = this.character.group.rotation.y + Math.PI;
-                this.initialRotationY = this.targetRotationY;
-                this.combatCamera.rotation.set(0, this.targetRotationY, 0);
-                
-                // Make combat camera globally available
-                window.combatCamera = this.combatCamera;
-                
-                // Show crosshair
-                this.crosshairGroup.visible = true;
-                
-                // Only request pointer lock if not already locked
-                if (!document.pointerLockElement) {
-                    await document.body.requestPointerLock();
-                }
-                
-                // Add mouse listeners
-                document.addEventListener('mousemove', this.onMouseMove);
-                document.addEventListener('mousedown', this.onMouseDown);
-                this.isInCombatMode = true;
+                await this.enterCombatMode();
             } else {
-                // Exit combat mode
-                console.log('Exiting combat mode');
-                
-                // Hide crosshair
-                this.crosshairGroup.visible = false;
-                
-                // Remove global combat camera reference
-                window.combatCamera = null;
-                
-                // Only exit pointer lock if we're currently locked
-                if (document.pointerLockElement) {
-                    document.exitPointerLock();
-                }
-                
-                // Remove mouse listeners
-                document.removeEventListener('mousemove', this.onMouseMove);
-                document.removeEventListener('mousedown', this.onMouseDown);
-                this.isInCombatMode = false;
+                this.exitCombatMode();
             }
         } catch (error) {
             console.error('Error toggling combat mode:', error);
         }
+    }
+    
+    async enterCombatMode() {
+        if (this.isInCombatMode) return;
+        
+        // Enter combat mode
+        console.log('Entering combat mode');
+        
+        // Position combat camera at arms length in front of character
+        const characterPosition = this.character.group.position.clone();
+        const characterDirection = new THREE.Vector3(0, 0, 1);
+        characterDirection.applyAxisAngle(new THREE.Vector3(0, 1, 0), this.character.group.rotation.y);
+        characterDirection.multiplyScalar(1.5);
+        
+        characterPosition.y += 1.5;
+        characterPosition.add(characterDirection);
+        this.combatCamera.position.copy(characterPosition);
+        
+        // Reset rotations to match character's direction
+        this.targetRotationX = 0;
+        this.targetRotationY = this.character.group.rotation.y + Math.PI;
+        this.initialRotationY = this.targetRotationY;
+        this.combatCamera.rotation.set(0, this.targetRotationY, 0);
+        
+        // Make combat camera globally available
+        window.combatCamera = this.combatCamera;
+        
+        // Show crosshair
+        this.crosshairGroup.visible = true;
+        
+        // Only request pointer lock if not already locked and not on mobile
+        if (!document.pointerLockElement && !this.isMobileDevice()) {
+            await document.body.requestPointerLock();
+        }
+        
+        // Add mouse listeners
+        document.addEventListener('mousemove', this.onMouseMove);
+        document.addEventListener('mousedown', this.onMouseDown);
+        this.isInCombatMode = true;
+    }
+    
+    exitCombatMode() {
+        if (!this.isInCombatMode) return;
+        
+        // Exit combat mode
+        console.log('Exiting combat mode');
+        
+        // Hide crosshair
+        this.crosshairGroup.visible = false;
+        
+        // Remove global combat camera reference
+        window.combatCamera = null;
+        
+        // Only exit pointer lock if we're currently locked
+        if (document.pointerLockElement) {
+            document.exitPointerLock();
+        }
+        
+        // Remove mouse listeners
+        document.removeEventListener('mousemove', this.onMouseMove);
+        document.removeEventListener('mousedown', this.onMouseDown);
+        this.isInCombatMode = false;
+    }
+    
+    // Helper method to detect mobile devices
+    isMobileDevice() {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     }
 
     onKeyPress(event) {
