@@ -9,7 +9,7 @@ export default defineConfig({
     },
     build: {
         outDir: 'dist',
-        assetsDir: '',
+        assetsDir: 'assets',
         rollupOptions: {
             input: {
                 main: resolve(__dirname, 'index.html')
@@ -18,7 +18,7 @@ export default defineConfig({
                 assetFileNames: (assetInfo) => {
                     // Keep original paths for model files
                     if (assetInfo.name.endsWith('.glb')) {
-                        return assetInfo.name;
+                        return `models/${assetInfo.name}`;
                     }
                     return 'assets/[name]-[hash][extname]';
                 }
