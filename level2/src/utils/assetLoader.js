@@ -6,15 +6,10 @@ export function getAssetPath(path) {
     
     // For production (Vercel)
     if (window.location.hostname !== 'localhost') {
-        // Check for special cases
-        if (path.includes('Astronaut') && !path.includes('character/')) {
-            return `/models/character/${path.replace('models/', '')}`;
-        }
-        
-        // For all other models
-        return `/models/${path.replace('models/', '')}`;
+        // For all models
+        return `/level2/${path}`;
     }
     
     // For local development
-    return `/models/${path.replace('models/', '')}`;
+    return `/${path}`;
 }
