@@ -7,7 +7,7 @@ export function getAssetPath(path) {
     // For production (Vercel)
     if (window.location.hostname !== 'localhost') {
         // Ensure we don't double up the base URL
-        return `/level2/${path}`;
+        return `/models/${path.replace('models/', '')}`;
     }
     
     // For local development
